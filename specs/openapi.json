@@ -13851,7 +13851,7 @@
                       },
                       "buildCommand": {
                         "type": "string",
-                        "description": "The command to run to build the workflow."
+                        "description": "The command to run to build the workflow. Required for every runtime except docker, which builds from its Dockerfile."
                       },
                       "repo": {
                         "type": "string",
@@ -14059,7 +14059,7 @@
                       },
                       "buildCommand": {
                         "type": "string",
-                        "description": "The command to run to build the workflow."
+                        "description": "The command to run to build the workflow. Required for every runtime except docker, which builds from its Dockerfile."
                       },
                       "repo": {
                         "type": "string",
