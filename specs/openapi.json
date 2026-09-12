@@ -17913,7 +17913,8 @@
           "invalid_owner_id",
           "invalid_status",
           "invalid_cursor",
-          "invalid_limit"
+          "invalid_limit",
+          "invalid_snapshot_name"
         ],
         "x-enum-varnames": [
           "ErrorCodeMultipleRegions",
@@ -17936,7 +17937,8 @@
           "ErrorCodeInvalidOwnerID",
           "ErrorCodeInvalidStatus",
           "ErrorCodeInvalidCursor",
-          "ErrorCodeInvalidLimit"
+          "ErrorCodeInvalidLimit",
+          "ErrorCodeInvalidSnapshotName"
         ],
         "x-enum-descriptions": [
           "A metrics query over resources spanning multiple regions is not supported.",
@@ -17959,7 +17961,8 @@
           "A list request omitted ownerId or named more than one.",
           "A list request filtered on a status value outside the resource's status vocabulary.",
           "A list request passed a cursor that is malformed or not visible to the caller.",
-          "A list request passed a limit that is not a positive integer within the route's maximum."
+          "A list request passed a limit that is not a positive integer within the route's maximum.",
+          "A snapshot name is empty, longer than 64 characters, or starts with snp-."
         ]
       },
       "pullRequestPreviewsEnabled": {
