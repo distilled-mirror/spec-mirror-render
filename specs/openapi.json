@@ -117,6 +117,10 @@
       "description": "The `Workspaces` endpoints supply more information about the workspaces that your API key has access to. This category was previously called `Owners`, as reflected by endpoint paths."
     },
     {
+      "name": "Build Sources",
+      "description": "Manage shared build sources for builds and images."
+    },
+    {
       "name": "Webhooks",
       "description": "[Webhooks](https://render.com/docs/webhooks) allow you to manage your Render webhook configuration.\n"
     },
@@ -3158,6 +3162,10 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "buildId": {
+                    "type": "string",
+                    "description": "The ID of the build to deploy. Cannot be combined with `commitId`, `imageUrl`, or `deployMode`.\n"
+                  },
                   "clearCache": {
                     "type": "string",
                     "enum": [
@@ -3169,15 +3177,15 @@
                   },
                   "commitId": {
                     "type": "string",
-                    "description": "The SHA of a specific Git commit to deploy for a service. Defaults to the latest commit on the service's connected branch.\n\nNote that deploying a specific commit with this endpoint does not disable autodeploys for the service.\n\nYou can toggle autodeploys for your service with the [Update service](https://api-docs.render.com/reference/update-service) endpoint or in the Render Dashboard.\n\nNot supported for cron jobs.\n"
+                    "description": "The SHA of a specific Git commit to deploy for a service. Defaults to the latest commit on the service's connected branch. Cannot be combined with `buildId`, `imageUrl`, or `deployMode: deploy_only`.\n\nNote that deploying a specific commit with this endpoint does not disable autodeploys for the service.\n\nYou can toggle autodeploys for your service with the [Update service](https://api-docs.render.com/reference/update-service) endpoint or in the Render Dashboard.\n\nNot supported for cron jobs.\n"
                   },
                   "imageUrl": {
                     "type": "string",
-                    "description": "The URL of the image to deploy for an image-backed service.\n\nThe host, repository, and image name all must match the currently configured image for the service.\n"
+                    "description": "The URL of the image to deploy for an image-backed service. Cannot be combined with `buildId`, `commitId`, or `deployMode: deploy_only`.\n\nThe host, repository, and image name all must match the currently configured image for the service.\n"
                   },
                   "deployMode": {
                     "$ref": "#/components/schemas/DeployMode",
-                    "description": "Deployment mode controlling build and deploy behavior.\n\nDefaults to `build_and_deploy` when not specified.\n\n**Validation:** `deploy_mode` cannot be combined with `commitId` or `imageUrl` or `clearCache`.\n"
+                    "description": "Deployment mode controlling build and deploy behavior.\n\nDefaults to `build_and_deploy` when not specified.\n\n**Validation:** `deployMode` cannot be combined with `buildId`. `deploy_only` cannot be combined with `commitId`, `imageUrl`, or `clearCache`.\n"
                   }
                 }
               }
@@ -13371,6 +13379,1367 @@
         }
       }
     },
+    "/build-sources": {
+      "post": {
+        "summary": "Create a build source",
+        "description": "Create a build source that can be linked to one or more\nservices in the same workspace.\n\nExactly one of `git` or `image` must be set:\n- `git`: the build source is git-backed. The code is built in\n   the requested `region` (defaults to `oregon`).\n- `image`: the build source is image-backed. It points at an\n  existing image in an external registry; no build is performed.\n\n`envVars`, `secretFiles`, and `envGroupIds` set the build-time\nenvironment and are only valid for `git` sources; the request fails\nif any are provided with `image`.\n",
+        "operationId": "create-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ownerId",
+                  "name"
+                ],
+                "properties": {
+                  "ownerId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "projectId": {
+                    "type": "string"
+                  },
+                  "git": {
+                    "type": "object",
+                    "required": [
+                      "runtime"
+                    ],
+                    "properties": {
+                      "baseDir": {
+                        "type": "string"
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "buildCommand": {
+                        "type": "string"
+                      },
+                      "buildFilter": {
+                        "$ref": "#/paths/~1build-sources~1{buildSourceId}/patch/requestBody/content/application~1json/schema/properties/git/properties/buildFilter"
+                      },
+                      "dockerfilePath": {
+                        "type": "string"
+                      },
+                      "runtime": {
+                        "type": "string",
+                        "enum": [
+                          "docker",
+                          "elixir",
+                          "go",
+                          "node",
+                          "python",
+                          "ruby",
+                          "rust"
+                        ],
+                        "description": "Build runtime for the build source. Static sites are not supported for build sources.\n"
+                      },
+                      "registryCredentialId": {
+                        "type": "string"
+                      },
+                      "region": {
+                        "type": "string",
+                        "enum": [
+                          "frankfurt",
+                          "oregon",
+                          "ohio",
+                          "singapore",
+                          "virginia"
+                        ],
+                        "default": "oregon",
+                        "description": "Defaults to \"oregon\""
+                      },
+                      "repoUrl": {
+                        "type": "string"
+                      },
+                      "rootDir": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "image": {
+                    "type": "object",
+                    "required": [
+                      "ownerId",
+                      "imageUrl"
+                    ],
+                    "properties": {
+                      "ownerId": {
+                        "type": "string"
+                      },
+                      "registryCredentialId": {
+                        "type": "string"
+                      },
+                      "imageUrl": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "serviceIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "envVars": {
+                    "$ref": "#/paths/~1services~1{serviceId}~1env-vars/put/requestBody/content/application~1json/schema"
+                  },
+                  "secretFiles": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/paths/~1services~1{serviceId}~1secret-files/put/requestBody/content/application~1json/schema/items"
+                    },
+                    "description": "Secret files for the build source's build. Only valid for `git` sources.\n"
+                  },
+                  "envGroupIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "IDs of env groups to link to the build source. Only valid for `git` sources; env groups must belong to the same workspace and must not be scoped to an environment.\n"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "ownerId",
+                    "createdAt",
+                    "updatedAt",
+                    "serviceLinks"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "ownerId": {
+                      "type": "string",
+                      "description": "ID of the workspace this build source belongs to."
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "description": "ID of the project this build source is scoped to, if any."
+                    },
+                    "git": {
+                      "allOf": [
+                        {
+                          "$ref": "#/paths/~1build-sources/post/requestBody/content/application~1json/schema/properties/git"
+                        }
+                      ],
+                      "description": "Present when the build source is currently build-based. Mutually exclusive with `image`.\n"
+                    },
+                    "image": {
+                      "allOf": [
+                        {
+                          "$ref": "#/paths/~1build-sources/post/requestBody/content/application~1json/schema/properties/image"
+                        }
+                      ],
+                      "description": "Present when the build source is currently image-based. Mutually exclusive with `git`.\n"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "serviceLinks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "description": "Services currently linked to this build source."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          }
+        }
+      },
+      "get": {
+        "summary": "List build sources",
+        "description": "List build sources matching the provided filters. If `ownerId` is\nomitted, returns build sources across every workspace you can view.\n",
+        "operationId": "list-build-sources",
+        "tags": [
+          "Build Sources"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/nameParam"
+          },
+          {
+            "$ref": "#/components/parameters/ownerIdParam"
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/includePreviewsParam"
+          },
+          {
+            "$ref": "#/components/parameters/createdBeforeParam"
+          },
+          {
+            "$ref": "#/components/parameters/createdAfterParam"
+          },
+          {
+            "$ref": "#/components/parameters/updatedBeforeParam"
+          },
+          {
+            "$ref": "#/components/parameters/updatedAfterParam"
+          },
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "buildSource",
+                      "cursor"
+                    ],
+                    "properties": {
+                      "buildSource": {
+                        "$ref": "#/paths/~1build-sources/post/responses/201/content/application~1json/schema"
+                      },
+                      "cursor": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}": {
+      "parameters": [
+        {
+          "name": "buildSourceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Retrieve a build source",
+        "description": "Retrieve a shared build source by ID\n",
+        "operationId": "get-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1build-sources/post/responses/201/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a build source",
+        "description": "Update a shared build source. Each top-level field is a true patch,\nunset fields are left unchanged.\n\nSupplying `git` or `image` can change the build source's\nunderlying identity:\n- `image` on a git-backed build source switches it to image-backed\n- `git` on an image-backed build source switches it to git-backed\n- `git` on a build source that's already git-backed is a pure\n  patch onto the existing config\n",
+        "operationId": "update-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "git": {
+                    "type": "object",
+                    "properties": {
+                      "baseDir": {
+                        "type": "string"
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "buildCommand": {
+                        "type": "string"
+                      },
+                      "buildFilter": {
+                        "type": "object",
+                        "description": "Glob patterns matched against files changed by a commit. When set, a commit only triggers a build when at least one changed file matches `paths` and none match `ignoredPaths`. Useful for monorepos where a single repo backs many services.\n",
+                        "required": [
+                          "paths",
+                          "ignoredPaths"
+                        ],
+                        "properties": {
+                          "paths": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "ignoredPaths": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "dockerfilePath": {
+                        "type": "string"
+                      },
+                      "runtime": {
+                        "type": "string",
+                        "enum": [
+                          "docker",
+                          "elixir",
+                          "go",
+                          "node",
+                          "python",
+                          "ruby",
+                          "rust"
+                        ],
+                        "description": "Build runtime for the build source. Static sites are not supported for build sources.\n"
+                      },
+                      "registryCredentialId": {
+                        "type": "string",
+                        "description": "Optional reference to the registry credential for this build. Omit the field to leave the stored credential unchanged; send an empty string to clear it.\n"
+                      },
+                      "region": {
+                        "type": "string",
+                        "enum": [
+                          "frankfurt",
+                          "oregon",
+                          "ohio",
+                          "singapore",
+                          "virginia"
+                        ],
+                        "description": "Region for the build. Honored only when this PATCH performs an image→build transition; rejected on a pure build patch (the cluster is pinned for an existing build), and must match the prior build region when switching back to build after time as an external image. Defaults to \"oregon\" for first-time builds.\n"
+                      },
+                      "repoUrl": {
+                        "type": "string"
+                      },
+                      "rootDir": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "image": {
+                    "type": "object",
+                    "description": "Patch shape for a build source's image identity. Unset fields are left unchanged on the underlying image reference. ownerId is intentionally omitted — a build source's owner is fixed at creation, and changing the image's owner would amount to a different identity.\n",
+                    "properties": {
+                      "imageUrl": {
+                        "type": "string"
+                      },
+                      "registryCredentialId": {
+                        "type": "string",
+                        "description": "Optional reference to the registry credential passed to the image repository to retrieve this image. Omit the field to leave the stored credential unchanged; send an empty string to clear it.\n"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1build-sources/post/responses/201/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a build source",
+        "description": "Delete the build source with the provided ID.\n",
+        "operationId": "delete-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "204": {
+            "description": "Build source deleted"
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/builds": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        }
+      ],
+      "get": {
+        "summary": "List builds in a build source",
+        "description": "List builds in a build source.\n",
+        "operationId": "list-builds-in-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds/post/responses/201/content/application~1json/schema"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Trigger a build",
+        "description": "Start a new build of the build source at the current HEAD of its\nbranch, even if an up-to-date build already exists. Services linked to\nthe build source with autodeploy enabled are deployed with the result.\n\nUpdating a build source or its build-time environment (env vars,\nsecret files, env groups) with the REST API does not build it. Call\nthis endpoint after those changes to build them.\n\nOnly `git` build sources can be built.\n",
+        "operationId": "trigger-build-source-build",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "201": {
+            "description": "Build started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "buildSourceId",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "buildSourceId": {
+                      "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema"
+                    },
+                    "buildRun": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "created",
+                            "inProgress",
+                            "succeeded",
+                            "failed",
+                            "canceled",
+                            "unknown"
+                          ]
+                        },
+                        "buildStartedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "buildFinishedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "runtime": {
+                          "type": "string",
+                          "enum": [
+                            "docker",
+                            "elixir",
+                            "go",
+                            "node",
+                            "python",
+                            "ruby",
+                            "rust"
+                          ]
+                        },
+                        "commitId": {
+                          "type": "string"
+                        },
+                        "commitUrl": {
+                          "type": "string"
+                        }
+                      },
+                      "description": "The Render build run that produced this build. Present when the build source is currently build-based. Mutually exclusive with `image`.\n"
+                    },
+                    "image": {
+                      "type": "object",
+                      "properties": {
+                        "imageVersionId": {
+                          "type": "string"
+                        },
+                        "SHA": {
+                          "type": "string"
+                        },
+                        "ref": {
+                          "type": "string"
+                        },
+                        "imageUrl": {
+                          "type": "string"
+                        },
+                        "registryCredentialId": {
+                          "type": "string"
+                        }
+                      },
+                      "description": "Present when the build source is currently image-based. Mutually exclusive with `buildRun`.\n"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "assetsDeletedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/env-vars": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        }
+      ],
+      "get": {
+        "summary": "List environment variables",
+        "description": "List all environment variables for the build source with the provided ID.\n",
+        "operationId": "get-env-vars-for-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/envVarWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update environment variables",
+        "description": "Replace all environment variables for a build source with the provided list of environment variables.",
+        "operationId": "update-env-vars-for-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/paths/~1services~1{serviceId}~1env-vars/put/requestBody/content/application~1json/schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/envVarWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/env-vars/{envVarKey}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        },
+        {
+          "$ref": "#/components/parameters/envVarKeyParam"
+        }
+      ],
+      "get": {
+        "summary": "Retrieve environment variable",
+        "description": "Retrieve a particular environment variable for a particular build source.\n\nThis only applies to environment variables set directly on the build source, not to environment variables in a linked environment group.\n",
+        "operationId": "retrieve-build-source-env-var",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/envVar"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "put": {
+        "summary": "Add or update environment variable",
+        "description": "Add or update a particular environment variable for a particular build source.\n\nThis only applies to environment variables set directly on the build source, not to environment variables in a linked environment group.\n",
+        "operationId": "update-build-source-env-var",
+        "tags": [
+          "Build Sources"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/addUpdateEnvVarInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/envVar"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete environment variable",
+        "description": "Delete a particular environment variable from a particular build source.\n\nThis only applies to environment variables set directly on the build source, not to environment variables in a linked environment group.\n",
+        "operationId": "delete-build-source-env-var",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "204": {
+            "description": "Environment variable deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/secret-files": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        }
+      ],
+      "get": {
+        "summary": "List secret files",
+        "description": "List all secret files for the build source with the provided ID.\n",
+        "operationId": "list-secret-files-for-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/secretFileWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update secret files",
+        "description": "Replace all secret files for a build source with the provided list of secret files.\n\n**Any of the build source's existing secret files not included in this request will be deleted.**\n\nThis only applies to secret files set directly on the build source, not to secret files in a linked environment group.\n",
+        "operationId": "update-secret-files-for-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/paths/~1services~1{serviceId}~1secret-files/put/requestBody/content/application~1json/schema/items"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/secretFileWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/secret-files/{envVarKey}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        },
+        {
+          "name": "envVarKey",
+          "in": "path",
+          "required": true,
+          "description": "The file name of the secret file",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Retrieve secret file",
+        "description": "Retrieve a particular secret file for a particular build source.\n\nThis only applies to secret files set directly on the build source, not to secret files in a linked environment group.\n",
+        "operationId": "retrieve-build-source-secret-file",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/secretFile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "put": {
+        "summary": "Add or update secret file",
+        "description": "Add or update a particular secret file for a particular build source.\n\nThis only applies to secret files set directly on the build source, not to secret files in a linked environment group.\n",
+        "operationId": "add-or-update-build-source-secret-file",
+        "tags": [
+          "Build Sources"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "content": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/secretFile"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete secret file",
+        "description": "Delete a particular secret file from a particular build source.\n\nThis only applies to secret files set directly on the build source, not to secret files in a linked environment group.\n",
+        "operationId": "delete-build-source-secret-file",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "204": {
+            "description": "Secret file deleted"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/env-groups/{envGroupId}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        },
+        {
+          "$ref": "#/components/parameters/envGroupIdParam"
+        }
+      ],
+      "post": {
+        "operationId": "link-env-group-to-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "summary": "Link environment group",
+        "description": "Link a particular environment group to a particular build source.\n\nThe build source will have access to the environment variables and secret files in the group at build time.\n",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/envGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unlink-env-group-from-build-source",
+        "tags": [
+          "Build Sources"
+        ],
+        "summary": "Unlink environment group",
+        "description": "Unlink a particular environment group from a particular build source.\n\nThe build source will lose access to the environment variables and secret files in the group.\n",
+        "responses": {
+          "204": {
+            "description": "environment group unlinked from build source"
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
     "/webhooks": {
       "post": {
         "summary": "Create a webhook",
@@ -14635,6 +16004,13 @@
                         "description": "Named parameters passed to the task function as keyword arguments"
                       }
                     ]
+                  },
+                  "idempotencyKey": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "description": "A client-generated key that makes starting a task run safe to retry. Repeating a request with the same key within 24 hours returns the task run that the first request started instead of starting another one; the repeated request's input is ignored. Keys are scoped to a single workflow version, so the same key used against a different version starts a separate run. Omit the key to always start a new run.",
+                    "example": "6b2f1f7a-6a0e-4f6f-9d1a-2b1d0d5f6c11"
                   }
                 }
               }
@@ -15713,6 +17089,9 @@
           "id": {
             "type": "string"
           },
+          "buildSourceId": {
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema"
+          },
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
           },
@@ -16789,6 +18168,10 @@
           "runtime"
         ],
         "properties": {
+          "buildSourceId": {
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+          },
           "autoscaling": {
             "$ref": "#/paths/~1services~1{serviceId}~1autoscaling/put/requestBody/content/application~1json/schema"
           },
@@ -16852,6 +18235,10 @@
           "runtime"
         ],
         "properties": {
+          "buildSourceId": {
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+          },
           "autoscaling": {
             "$ref": "#/paths/~1services~1{serviceId}~1autoscaling/put/requestBody/content/application~1json/schema"
           },
@@ -16899,6 +18286,10 @@
           "runtime"
         ],
         "properties": {
+          "buildSourceId": {
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+          },
           "autoscaling": {
             "$ref": "#/paths/~1services~1{serviceId}~1autoscaling/put/requestBody/content/application~1json/schema"
           },
@@ -16947,6 +18338,10 @@
           "schedule"
         ],
         "properties": {
+          "buildSourceId": {
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+          },
           "env": {
             "$ref": "#/components/schemas/serviceEnv"
           },
@@ -16970,6 +18365,13 @@
       "servicePATCH": {
         "type": "object",
         "properties": {
+          "buildSourceId": {
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
+            "description": "The ID of the Build Source to attach this service to. Cannot be combined with other build-configuration changes. Attaching to a Build Source with no builds triggers one."
+          },
+          "buildId": {
+            "type": "string"
+          },
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
           },
@@ -18659,7 +20061,7 @@
           "deploy_only",
           "build_and_deploy"
         ],
-        "description": "Controls deployment behavior when triggering a deploy.\n\n- `deploy_only`: Deploy the last successful build without rebuilding (minimizes downtime)\n- `build_and_deploy`: Build new code and deploy it (default behavior when not specified)\n\n**Note:** `deploy_only` cannot be combined with `commitId`, `imageUrl` or `clearCache` parameters,\nas those are build related fields.\n",
+        "description": "Controls deployment behavior when triggering a deploy.\n\n- `deploy_only`: Deploy the last successful build without rebuilding (minimizes downtime)\n- `build_and_deploy`: Build new code and deploy it (default behavior when not specified)\n\n**Note:** `deployMode` cannot be combined with `buildId`. `deploy_only` cannot be combined with\n`commitId`, `imageUrl`, or `clearCache`, as those are build related fields.\n",
         "default": "build_and_deploy"
       },
       "projectWithCursor": {
