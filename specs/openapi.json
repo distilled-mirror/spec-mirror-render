@@ -21207,6 +21207,9 @@
                 "$ref": "#/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema/properties/details/oneOf/0"
               }
             }
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/cursor"
           }
         }
       },
