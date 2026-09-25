@@ -20611,9 +20611,6 @@
               "$ref": "#/components/schemas/cidrBlockAndDescription"
             }
           },
-          "parameterOverrides": {
-            "$ref": "#/components/schemas/postgresParameterOverrides"
-          },
           "readReplicas": {
             "$ref": "#/components/schemas/readReplicasInput"
           },
@@ -20662,9 +20659,6 @@
               "$ref": "#/components/schemas/cidrBlockAndDescription"
             }
           },
-          "parameterOverrides": {
-            "$ref": "#/components/schemas/postgresParameterOverrides"
-          },
           "readReplicas": {
             "$ref": "#/components/schemas/readReplicasInput"
           }
@@ -20686,9 +20680,6 @@
           "name": {
             "type": "string",
             "description": "The display name of the replica instance."
-          },
-          "parameterOverrides": {
-            "$ref": "#/components/schemas/postgresParameterOverrides"
           }
         },
         "required": [
@@ -20708,20 +20699,11 @@
           "name": {
             "type": "string",
             "description": "The display name of the replica instance."
-          },
-          "parameterOverrides": {
-            "$ref": "#/components/schemas/postgresParameterOverrides"
           }
         },
         "required": [
           "name"
         ]
-      },
-      "postgresParameterOverrides": {
-        "type": "object",
-        "additionalProperties": {
-          "type": "string"
-        }
       },
       "postgresConnectionInfo": {
         "type": "object",
@@ -20966,9 +20948,6 @@
           },
           "diskSizeGB": {
             "type": "integer"
-          },
-          "parameterOverrides": {
-            "$ref": "#/components/schemas/postgresParameterOverrides"
           },
           "primaryPostgresID": {
             "type": "string"
