@@ -6952,7 +6952,7 @@
                                 },
                                 "fromTrigger": {
                                   "description": "The auto-deploy trigger value immediately before it was disabled",
-                                  "$ref": "#/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema/properties/details/oneOf/0/oneOf/45/properties/newTrigger"
+                                  "$ref": "#/components/schemas/servicePOST/properties/autoDeployTrigger"
                                 }
                               }
                             },
@@ -6962,12 +6962,7 @@
                               "properties": {
                                 "newTrigger": {
                                   "description": "The auto-deploy trigger value after it was re-enabled",
-                                  "type": "string",
-                                  "enum": [
-                                    "commit",
-                                    "off",
-                                    "checksPass"
-                                  ]
+                                  "$ref": "#/components/schemas/servicePOST/properties/autoDeployTrigger"
                                 }
                               }
                             }
@@ -17096,6 +17091,9 @@
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
           },
+          "autoDeployTrigger": {
+            "$ref": "#/components/schemas/servicePOST/properties/autoDeployTrigger"
+          },
           "branch": {
             "type": "string"
           },
@@ -17259,7 +17257,9 @@
           "yes",
           "no"
         ],
-        "default": "yes"
+        "default": "yes",
+        "deprecated": true,
+        "description": "Deprecated: use `autoDeployTrigger` instead. You can't set both `autoDeploy` and `autoDeployTrigger` in the same request.\n\n- `yes` is equivalent to `autoDeployTrigger: commit`.\n- `no` is equivalent to `autoDeployTrigger: off`.\n"
       },
       "buildFilter": {
         "type": "object",
@@ -18043,6 +18043,15 @@
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
           },
+          "autoDeployTrigger": {
+            "type": "string",
+            "enum": [
+              "commit",
+              "off",
+              "checksPass"
+            ],
+            "description": "Controls autodeploy behavior.\n\n- `commit`: Deploy each time a commit is pushed to the service's linked branch.\n- `checksPass`: Deploy each time a commit is pushed to the linked branch, but only after the commit's CI checks pass.\n- `off`: Disable autodeploys.\n"
+          },
           "branch": {
             "type": "string",
             "description": "The repo branch to pull, build, and deploy. If omitted, uses the repository's default branch."
@@ -18375,6 +18384,9 @@
           },
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
+          },
+          "autoDeployTrigger": {
+            "$ref": "#/components/schemas/servicePOST/properties/autoDeployTrigger"
           },
           "repo": {
             "type": "string"
