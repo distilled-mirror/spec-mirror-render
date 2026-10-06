@@ -15942,6 +15942,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
           "401": {
             "$ref": "#/components/responses/401Unauthorized"
           },
@@ -16364,6 +16367,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
           "401": {
             "$ref": "#/components/responses/401Unauthorized"
           },
@@ -16394,6 +16400,9 @@
         "responses": {
           "204": {
             "description": "Task run canceled"
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/401Unauthorized"
