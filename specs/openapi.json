@@ -13913,7 +13913,7 @@
       ],
       "get": {
         "summary": "List builds in a build source",
-        "description": "List builds in a build source.\n",
+        "description": "List builds in a build source, newest first. Pass the last item's\n`cursor` as the `cursor` parameter to fetch the next page.\n",
         "operationId": "list-builds-in-build-source",
         "tags": [
           "Build Sources"
@@ -13934,7 +13934,19 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds/post/responses/201/content/application~1json/schema"
+                    "type": "object",
+                    "required": [
+                      "build",
+                      "cursor"
+                    ],
+                    "properties": {
+                      "build": {
+                        "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds/post/responses/201/content/application~1json/schema"
+                      },
+                      "cursor": {
+                        "type": "string"
+                      }
+                    }
                   }
                 }
               }
@@ -13988,7 +14000,7 @@
                   ],
                   "properties": {
                     "id": {
-                      "type": "string"
+                      "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds~1{buildId}/parameters/1/schema"
                     },
                     "buildSourceId": {
                       "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema"
@@ -14091,6 +14103,65 @@
           },
           "404": {
             "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/builds/{buildId}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        },
+        {
+          "name": "buildId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Retrieve a build",
+        "description": "Retrieve a build of a build source, including its status.\n",
+        "operationId": "retrieve-build-source-build",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds/post/responses/201/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "406": {
+            "$ref": "#/components/responses/406NotAcceptable"
+          },
+          "410": {
+            "$ref": "#/components/responses/410Gone"
           },
           "429": {
             "$ref": "#/components/responses/429RateLimit"
