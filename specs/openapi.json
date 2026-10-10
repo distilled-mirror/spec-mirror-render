@@ -13409,9 +13409,6 @@
                       "runtime"
                     ],
                     "properties": {
-                      "baseDir": {
-                        "type": "string"
-                      },
                       "branch": {
                         "type": "string"
                       },
@@ -13420,6 +13417,10 @@
                       },
                       "buildFilter": {
                         "$ref": "#/paths/~1build-sources~1{buildSourceId}/patch/requestBody/content/application~1json/schema/properties/git/properties/buildFilter"
+                      },
+                      "dockerContext": {
+                        "type": "string",
+                        "description": "Directory passed to `docker build` as the build context, relative to the repository root. Only valid for the `docker` runtime. Defaults to \".\".\n"
                       },
                       "dockerfilePath": {
                         "type": "string"
@@ -13754,9 +13755,6 @@
                   "git": {
                     "type": "object",
                     "properties": {
-                      "baseDir": {
-                        "type": "string"
-                      },
                       "branch": {
                         "type": "string"
                       },
@@ -13784,6 +13782,10 @@
                             }
                           }
                         }
+                      },
+                      "dockerContext": {
+                        "type": "string",
+                        "description": "Directory passed to `docker build` as the build context, relative to the repository root. Only valid for the `docker` runtime.\n"
                       },
                       "dockerfilePath": {
                         "type": "string"
@@ -18256,9 +18258,6 @@
       },
       "webServiceDetailsPOST": {
         "type": "object",
-        "required": [
-          "runtime"
-        ],
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
@@ -18274,7 +18273,9 @@
             "$ref": "#/components/schemas/serviceEnv"
           },
           "runtime": {
-            "$ref": "#/components/schemas/serviceRuntime"
+            "$ref": "#/components/schemas/serviceRuntime",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "Required unless `buildSourceId` is set, since the build source provides its own runtime."
           },
           "envSpecificDetails": {
             "$ref": "#/components/schemas/envSpecificDetailsPOST"
@@ -18323,9 +18324,6 @@
       },
       "privateServiceDetailsPOST": {
         "type": "object",
-        "required": [
-          "runtime"
-        ],
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
@@ -18341,7 +18339,9 @@
             "$ref": "#/components/schemas/serviceEnv"
           },
           "runtime": {
-            "$ref": "#/components/schemas/serviceRuntime"
+            "$ref": "#/components/schemas/serviceRuntime",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "Required unless `buildSourceId` is set, since the build source provides its own runtime."
           },
           "envSpecificDetails": {
             "$ref": "#/components/schemas/envSpecificDetailsPOST"
@@ -18374,9 +18374,6 @@
       },
       "backgroundWorkerDetailsPOST": {
         "type": "object",
-        "required": [
-          "runtime"
-        ],
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
@@ -18392,7 +18389,9 @@
             "$ref": "#/components/schemas/serviceEnv"
           },
           "runtime": {
-            "$ref": "#/components/schemas/serviceRuntime"
+            "$ref": "#/components/schemas/serviceRuntime",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "Required unless `buildSourceId` is set, since the build source provides its own runtime."
           },
           "envSpecificDetails": {
             "$ref": "#/components/schemas/envSpecificDetailsPOST"
@@ -18426,7 +18425,6 @@
       "cronJobDetailsPOST": {
         "type": "object",
         "required": [
-          "runtime",
           "schedule"
         ],
         "properties": {
@@ -18438,7 +18436,9 @@
             "$ref": "#/components/schemas/serviceEnv"
           },
           "runtime": {
-            "$ref": "#/components/schemas/serviceRuntime"
+            "$ref": "#/components/schemas/serviceRuntime",
+            "x-go-type-skip-optional-pointer": true,
+            "description": "Required unless `buildSourceId` is set, since the build source provides its own runtime."
           },
           "envSpecificDetails": {
             "$ref": "#/components/schemas/envSpecificDetails"
@@ -18459,7 +18459,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to attach this service to. Cannot be combined with other build-configuration changes. Attaching to a Build Source with no builds triggers one."
+            "description": "The ID of the Build Source to link this service to. Cannot be combined with other build-configuration changes."
           },
           "buildId": {
             "type": "string"
