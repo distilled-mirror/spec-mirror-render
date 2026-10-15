@@ -748,15 +748,17 @@
       "parameters": [
         {
           "$ref": "#/paths/~1blueprints~1{blueprintId}/parameters/0"
-        },
-        {
-          "$ref": "#/components/parameters/cursorParam"
-        },
-        {
-          "$ref": "#/components/parameters/limitParam"
         }
       ],
       "get": {
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
         "description": "List syncs for the Blueprint with the provided ID.\n",
         "summary": "List Blueprint syncs",
         "operationId": "list-blueprint-syncs",
