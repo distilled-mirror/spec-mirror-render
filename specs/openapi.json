@@ -759,7 +759,7 @@
             "$ref": "#/components/parameters/limitParam"
           }
         ],
-        "description": "List syncs for the Blueprint with the provided ID.\n",
+        "description": "List syncs for the Blueprint with the provided ID.\nSyncs that are planned but not yet approved (in the `created` state) are not included.\n",
         "summary": "List Blueprint syncs",
         "operationId": "list-blueprint-syncs",
         "tags": [
