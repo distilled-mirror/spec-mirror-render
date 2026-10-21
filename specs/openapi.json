@@ -18461,7 +18461,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to link this service to. Cannot be combined with other build-configuration changes."
+            "description": "The ID of the Build Source to link this service to. Cannot be combined with build-configuration changes or other `serviceDetails` fields, except `startCommand`. Linking to a Build Source with a native runtime requires a start command, either in this request or already set on the service. Linking to a Build Source with a Docker or image runtime rejects a start command."
           },
           "buildId": {
             "type": "string"
@@ -19414,7 +19414,8 @@
           "invalid_cursor",
           "invalid_limit",
           "invalid_snapshot_name",
-          "sandbox_group_suspended"
+          "sandbox_group_suspended",
+          "sandbox_group_limit_reached"
         ],
         "x-enum-varnames": [
           "ErrorCodeMultipleRegions",
@@ -19438,7 +19439,9 @@
           "ErrorCodeInvalidStatus",
           "ErrorCodeInvalidCursor",
           "ErrorCodeInvalidLimit",
-          "ErrorCodeInvalidSnapshotName"
+          "ErrorCodeInvalidSnapshotName",
+          "ErrorCodeSandboxGroupSuspended",
+          "ErrorCodeSandboxGroupLimitReached"
         ],
         "x-enum-descriptions": [
           "A metrics query over resources spanning multiple regions is not supported.",
@@ -19462,7 +19465,9 @@
           "A list request filtered on a status value outside the resource's status vocabulary.",
           "A list request passed a cursor that is malformed or not visible to the caller.",
           "A list request passed a limit that is not a positive integer within the route's maximum.",
-          "A snapshot name is empty, longer than 64 characters, or starts with snp-."
+          "A snapshot name is empty, longer than 64 characters, or starts with snp-.",
+          "A create, connect, or snapshot request named a sandbox whose group is suspended.",
+          "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit."
         ]
       },
       "pullRequestPreviewsEnabled": {
