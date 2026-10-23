@@ -6055,6 +6055,7 @@
                         "disk_created",
                         "disk_updated",
                         "disk_deleted",
+                        "disk_snapshot_restored",
                         "image_pull_failed",
                         "instance_count_changed",
                         "job_run_ended",
@@ -6550,6 +6551,32 @@
                               }
                             },
                             {
+                              "title": "Disk Snapshot Restored",
+                              "type": "object",
+                              "required": [
+                                "diskId",
+                                "triggeredByUser"
+                              ],
+                              "properties": {
+                                "diskId": {
+                                  "$ref": "#/paths/~1disks~1{diskId}/parameters/0/schema"
+                                },
+                                "instanceId": {
+                                  "description": "The instance whose disk was restored, when the restore named one. A service instance ID, or the service ID for an older single disk.",
+                                  "type": "string"
+                                },
+                                "snapshotCreatedAt": {
+                                  "description": "When the restored snapshot was taken",
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "triggeredByUser": {
+                                  "type": "string",
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            {
                               "title": "Service Disk Usage High",
                               "type": "object",
                               "required": [
@@ -6948,7 +6975,7 @@
                               ],
                               "properties": {
                                 "trigger": {
-                                  "$ref": "#/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema/properties/details/oneOf/0/oneOf/41/properties/trigger"
+                                  "$ref": "#/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema/properties/details/oneOf/0/oneOf/42/properties/trigger"
                                 }
                               }
                             },
@@ -6959,7 +6986,7 @@
                               ],
                               "properties": {
                                 "trigger": {
-                                  "$ref": "#/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema/properties/details/oneOf/0/oneOf/41/properties/trigger"
+                                  "$ref": "#/paths/~1events~1{eventId}/get/responses/200/content/application~1json/schema/properties/details/oneOf/0/oneOf/42/properties/trigger"
                                 }
                               }
                             },
@@ -16955,6 +16982,7 @@
                 "disk_created",
                 "disk_updated",
                 "disk_deleted",
+                "disk_snapshot_restored",
                 "service_disk_usage_high",
                 "service_disk_usage_recovered",
                 "image_pull_failed",
@@ -19437,7 +19465,8 @@
           "invalid_limit",
           "invalid_snapshot_name",
           "sandbox_group_suspended",
-          "sandbox_group_limit_reached"
+          "sandbox_group_limit_reached",
+          "invalid_sandbox_plan"
         ],
         "x-enum-varnames": [
           "ErrorCodeMultipleRegions",
@@ -19463,7 +19492,8 @@
           "ErrorCodeInvalidLimit",
           "ErrorCodeInvalidSnapshotName",
           "ErrorCodeSandboxGroupSuspended",
-          "ErrorCodeSandboxGroupLimitReached"
+          "ErrorCodeSandboxGroupLimitReached",
+          "ErrorCodeInvalidSandboxPlan"
         ],
         "x-enum-descriptions": [
           "A metrics query over resources spanning multiple regions is not supported.",
@@ -19489,7 +19519,8 @@
           "A list request passed a limit that is not a positive integer within the route's maximum.",
           "A snapshot name is empty, longer than 64 characters, or starts with snp-.",
           "A create, connect, or snapshot request named a sandbox whose group is suspended.",
-          "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit."
+          "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit.",
+          "A sandbox create asked for a plan that does not exist or is not offered."
         ]
       },
       "pullRequestPreviewsEnabled": {
