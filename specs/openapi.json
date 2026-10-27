@@ -17076,7 +17076,7 @@
               "ChangeTeamMemberRoleEvent",
               "ChangeWorkspaceDeployHandlingEvent",
               "ChangeWorkspacePrivacyEvent",
-              "CreateArtifactSourceEvent",
+              "CreateBuildSourceEvent",
               "CreateCronJobEvent",
               "CreateEnvVarsEvent",
               "CreateEnvironmentEvent",
@@ -18513,9 +18513,6 @@
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
             "description": "The ID of the Build Source to link this service to. Cannot be combined with build-configuration changes or other `serviceDetails` fields, except `startCommand`. Linking to a Build Source with a native runtime requires a start command, either in this request or already set on the service. Linking to a Build Source with a Docker or image runtime rejects a start command."
           },
-          "buildId": {
-            "type": "string"
-          },
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
           },
@@ -19234,6 +19231,10 @@
           "id": {
             "type": "string"
           },
+          "buildId": {
+            "type": "string",
+            "description": "The ID of the build this deploy shipped. Only present for deploys of a build from a Build Source."
+          },
           "commit": {
             "type": "object",
             "properties": {
@@ -19457,6 +19458,8 @@
           "snapshot_not_available",
           "snapshot_plan_mismatch",
           "snapshot_not_found",
+          "build_not_found",
+          "build_not_succeeded",
           "invalid_sandbox_group_id",
           "invalid_snapshot_id",
           "invalid_owner_id",
@@ -19484,6 +19487,8 @@
           "ErrorCodeSnapshotNotAvailable",
           "ErrorCodeSnapshotPlanMismatch",
           "ErrorCodeSnapshotNotFound",
+          "ErrorCodeBuildNotFound",
+          "ErrorCodeBuildNotSucceeded",
           "ErrorCodeInvalidSandboxGroupID",
           "ErrorCodeInvalidSnapshotID",
           "ErrorCodeInvalidOwnerID",
@@ -19511,6 +19516,8 @@
           "A sandbox create named a source snapshot that is not available.",
           "A sandbox create named a runtime source snapshot with a different plan.",
           "A sandbox create named a source snapshot that does not exist.",
+          "A sandbox create or build request named a build that does not exist in the sandbox group.",
+          "A sandbox create named a build that has not succeeded.",
           "A request path named a sandbox group ID that is not a well-formed sbg- identifier.",
           "A request path named a snapshot ID that is not a well-formed snp- identifier.",
           "A list request omitted ownerId or named more than one.",
