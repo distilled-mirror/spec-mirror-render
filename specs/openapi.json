@@ -17077,6 +17077,7 @@
               "ChangeWorkspaceDeployHandlingEvent",
               "ChangeWorkspacePrivacyEvent",
               "CreateBuildSourceEvent",
+              "DeleteBuildSourceEvent",
               "CreateCronJobEvent",
               "CreateEnvVarsEvent",
               "CreateEnvironmentEvent",
@@ -19469,7 +19470,8 @@
           "invalid_snapshot_name",
           "sandbox_group_suspended",
           "sandbox_group_limit_reached",
-          "invalid_sandbox_plan"
+          "invalid_sandbox_plan",
+          "invalid_timeout_seconds"
         ],
         "x-enum-varnames": [
           "ErrorCodeMultipleRegions",
@@ -19498,7 +19500,8 @@
           "ErrorCodeInvalidSnapshotName",
           "ErrorCodeSandboxGroupSuspended",
           "ErrorCodeSandboxGroupLimitReached",
-          "ErrorCodeInvalidSandboxPlan"
+          "ErrorCodeInvalidSandboxPlan",
+          "ErrorCodeInvalidTimeoutSeconds"
         ],
         "x-enum-descriptions": [
           "A metrics query over resources spanning multiple regions is not supported.",
@@ -19527,7 +19530,8 @@
           "A snapshot name is empty, longer than 64 characters, or starts with snp-.",
           "A create, connect, or snapshot request named a sandbox whose group is suspended.",
           "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit.",
-          "A sandbox create asked for a plan that does not exist or is not offered."
+          "A sandbox create asked for a plan that does not exist or is not offered.",
+          "A sandbox create asked for a timeoutSeconds below 1 or above the workspace plan's maximum."
         ]
       },
       "pullRequestPreviewsEnabled": {
