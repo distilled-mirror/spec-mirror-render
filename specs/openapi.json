@@ -19444,6 +19444,7 @@
         "type": "string",
         "description": "The machine-readable codes that can appear in the error object's \"code\" field. The field is a plain string so new codes are not breaking changes; this vocabulary exists so generated clients get typed constants. OpenAPI cannot deprecate individual enum values, so deprecation notes live in x-enum-descriptions.",
         "enum": [
+          "insufficient_token_scope",
           "multiple_regions",
           "duplicate_saved_search_name",
           "too_many_resources",
@@ -19474,6 +19475,7 @@
           "invalid_timeout_seconds"
         ],
         "x-enum-varnames": [
+          "ErrorCodeInsufficientTokenScope",
           "ErrorCodeMultipleRegions",
           "ErrorCodeDuplicateSavedSearchName",
           "ErrorCodeTooManyResources",
@@ -19504,6 +19506,7 @@
           "ErrorCodeInvalidTimeoutSeconds"
         ],
         "x-enum-descriptions": [
+          "The scoped API token does not satisfy the endpoint's minimum scope requirements.",
           "A metrics query over resources spanning multiple regions is not supported.",
           "A saved-search create or rename hit a name already used in the project.",
           "A metrics query over more resources than the query supports; the bandwidth per-source breakdown caps at 30.",
@@ -19531,7 +19534,7 @@
           "A create, connect, or snapshot request named a sandbox whose group is suspended.",
           "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit.",
           "A sandbox create asked for a plan that does not exist or is not offered.",
-          "A sandbox create asked for a timeoutSeconds below 1 or above the workspace plan's maximum."
+          "A sandbox create asked for a timeoutSeconds below 0 or above the workspace plan's maximum."
         ]
       },
       "pullRequestPreviewsEnabled": {
@@ -21553,7 +21556,7 @@
         }
       },
       "403Forbidden": {
-        "description": "You do not have permissions for the requested resource.",
+        "description": "You do not have permissions for the requested resource. If a scoped API token does not satisfy the endpoint's minimum scope requirements, the response has code insufficient_token_scope and its message lists all minimum required scopes. Broader scopes that include their permissions also satisfy the requirements. Passing this check does not guarantee access to the requested resource or to conditional operations.",
         "content": {
           "application/json": {
             "schema": {
