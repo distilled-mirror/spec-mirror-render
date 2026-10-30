@@ -2779,7 +2779,7 @@
       },
       "post": {
         "summary": "Create service",
-        "description": "Creates a new Render service in the specified workspace with the specified configuration.\n",
+        "description": "Creates a new Render service in the specified workspace with the specified configuration.\n\n400 with `code: build_source_region_mismatch` if `buildSourceId` names a git-backed\nBuild Source in a different region than the service.\n",
         "operationId": "create-service",
         "tags": [
           "Services"
@@ -2887,7 +2887,7 @@
       },
       "patch": {
         "summary": "Update service",
-        "description": "Update the service with the provided ID.\n",
+        "description": "Update the service with the provided ID.\n\n400 with `code: build_source_region_mismatch` if `buildSourceId` names a git-backed\nBuild Source in a different region than the service.\n",
         "operationId": "update-service",
         "tags": [
           "Services"
@@ -17115,6 +17115,7 @@
               "InviteToOrgEvent",
               "InviteToTeamEvent",
               "JoinTeamEvent",
+              "LinkBuildSourceEnvGroupEvent",
               "LoginEvent",
               "LogoutEvent",
               "MaintenanceModeEnabledEvent",
@@ -17132,6 +17133,7 @@
               "StartShellEvent",
               "SuspendPostgresEvent",
               "SuspendServiceEvent",
+              "UnlinkBuildSourceEnvGroupEvent",
               "UpdateEnvVarsEvent",
               "UpdateIPAllowListEvent",
               "UpdateOrgPaymentMethodEvent",
@@ -17223,7 +17225,8 @@
             "type": "string"
           },
           "buildSourceId": {
-            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema"
+            "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
+            "description": "The ID of the Build Source the service builds and deploys from, if any. A git-backed Build Source must be in the same region as the service."
           },
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
@@ -18314,7 +18317,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set. A git-backed Build Source must be in the same region as the service; otherwise the request is rejected with 400 and `code: build_source_region_mismatch`."
           },
           "autoscaling": {
             "$ref": "#/paths/~1services~1{serviceId}~1autoscaling/put/requestBody/content/application~1json/schema"
@@ -18380,7 +18383,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set. A git-backed Build Source must be in the same region as the service; otherwise the request is rejected with 400 and `code: build_source_region_mismatch`."
           },
           "autoscaling": {
             "$ref": "#/paths/~1services~1{serviceId}~1autoscaling/put/requestBody/content/application~1json/schema"
@@ -18430,7 +18433,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set. A git-backed Build Source must be in the same region as the service; otherwise the request is rejected with 400 and `code: build_source_region_mismatch`."
           },
           "autoscaling": {
             "$ref": "#/paths/~1services~1{serviceId}~1autoscaling/put/requestBody/content/application~1json/schema"
@@ -18483,7 +18486,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set."
+            "description": "The ID of the Build Source to build and deploy from. Provides all source and build configuration: omit `repo`, `branch`, `image`, `buildFilter`, `runtime`, and build-related `envSpecificDetails` fields when set. A git-backed Build Source must be in the same region as the service; otherwise the request is rejected with 400 and `code: build_source_region_mismatch`."
           },
           "env": {
             "$ref": "#/components/schemas/serviceEnv"
@@ -18512,7 +18515,7 @@
         "properties": {
           "buildSourceId": {
             "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0/schema",
-            "description": "The ID of the Build Source to link this service to. Cannot be combined with build-configuration changes or other `serviceDetails` fields, except `startCommand`. Linking to a Build Source with a native runtime requires a start command, either in this request or already set on the service. Linking to a Build Source with a Docker or image runtime rejects a start command."
+            "description": "The ID of the Build Source to link this service to. Cannot be combined with build-configuration changes or other `serviceDetails` fields, except `startCommand`. Linking to a Build Source with a native runtime requires a start command, either in this request or already set on the service. Linking to a Build Source with a Docker or image runtime rejects a start command. A git-backed Build Source must be in the same region as the service; otherwise the request is rejected with 400 and `code: build_source_region_mismatch`."
           },
           "autoDeploy": {
             "$ref": "#/components/schemas/autoDeploy"
@@ -19472,7 +19475,8 @@
           "sandbox_group_suspended",
           "sandbox_group_limit_reached",
           "invalid_sandbox_plan",
-          "invalid_timeout_seconds"
+          "invalid_timeout_seconds",
+          "build_source_region_mismatch"
         ],
         "x-enum-varnames": [
           "ErrorCodeInsufficientTokenScope",
@@ -19503,7 +19507,8 @@
           "ErrorCodeSandboxGroupSuspended",
           "ErrorCodeSandboxGroupLimitReached",
           "ErrorCodeInvalidSandboxPlan",
-          "ErrorCodeInvalidTimeoutSeconds"
+          "ErrorCodeInvalidTimeoutSeconds",
+          "ErrorCodeBuildSourceRegionMismatch"
         ],
         "x-enum-descriptions": [
           "The scoped API token does not satisfy the endpoint's minimum scope requirements.",
@@ -19534,7 +19539,8 @@
           "A create, connect, or snapshot request named a sandbox whose group is suspended.",
           "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit.",
           "A sandbox create asked for a plan that does not exist or is not offered.",
-          "A sandbox create asked for a timeoutSeconds below 0 or above the workspace plan's maximum."
+          "A sandbox create asked for a timeoutSeconds below 0 or above the workspace plan's maximum.",
+          "A service create or update linked a git-backed Build Source in a different region than the service."
         ]
       },
       "pullRequestPreviewsEnabled": {
