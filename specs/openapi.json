@@ -93,7 +93,7 @@
       "description": "[Registry Credentials](https://render.com/docs/deploying-an-image#credentials-for-private-images) allow you to manage credentials for private Docker images.\n"
     },
     {
-      "name": "Sandboxes (Beta)",
+      "name": "Sandboxes",
       "description": "Sandboxes are ephemeral, isolated compute environments for running code, executing commands, and transferring files. Sandboxes are in public beta.\n"
     },
     {
@@ -135,6 +135,10 @@
     {
       "name": "Workflow Tasks",
       "description": "Run and manage tasks as part of [Render Workflows](https://render.com/docs/workflows).\n"
+    },
+    {
+      "name": "Workflow Flows",
+      "description": "Run and inspect durable flows as part of [Render Workflows](https://render.com/docs/workflows).\n"
     },
     {
       "name": "Redis (Deprecated)",
@@ -16563,13 +16567,865 @@
         }
       }
     },
+    "/flows": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ownerIdParam"
+        },
+        {
+          "name": "flowSlug",
+          "in": "query",
+          "description": "An array of flow slugs in the format workflow-slug/flow-name. An optional version can be appended (workflow-slug/flow-name:version). If no version is provided, the latest version is used.",
+          "example": [
+            "my-workflow-slug/my-flow",
+            "my-workflow-slug/my-flow:SHA123"
+          ],
+          "schema": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "$ref": "#/paths/~1tasks/parameters/2"
+        },
+        {
+          "$ref": "#/paths/~1tasks/parameters/3"
+        }
+      ],
+      "get": {
+        "summary": "List flows",
+        "description": "List workflow flows that match the provided filters. If no filters are provided, all flow definitions accessible by the authenticated user are returned.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "listFlows",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of flows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/flowWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/flows/{flowId}": {
+      "parameters": [
+        {
+          "name": "flowId",
+          "in": "path",
+          "description": "The ID of the flow",
+          "example": "flw-d0hp8fs9c44c73a6f1qg",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Retrieve flow",
+        "description": "Retrieve the workflow flow with the provided ID.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "getFlow",
+        "responses": {
+          "200": {
+            "description": "Flow details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "flw-d0hp8fs9c44c73a6f1qg"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "workflowId": {
+                      "type": "string"
+                    },
+                    "workflowVersionId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/flow-runs": {
+      "get": {
+        "summary": "List flow runs",
+        "description": "List flow runs that match the provided filters. If no filters are provided, all flow runs accessible by the authenticated user are returned.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "listFlowRuns",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          },
+          {
+            "$ref": "#/paths/~1flows/parameters/1"
+          },
+          {
+            "name": "flowId",
+            "in": "query",
+            "description": "An array of flow IDs",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "An array of flow run statuses to filter on",
+            "schema": {
+              "type": "array",
+              "items": {
+                "description": "The status of a flow run.",
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "running",
+                  "succeeded",
+                  "failed",
+                  "canceled",
+                  "paused"
+                ],
+                "x-enum-varnames": [
+                  "FlowRunStatusPending",
+                  "FlowRunStatusRunning",
+                  "FlowRunStatusSucceeded",
+                  "FlowRunStatusFailed",
+                  "FlowRunStatusCanceled",
+                  "FlowRunStatusPaused"
+                ]
+              }
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ownerIdParam"
+          },
+          {
+            "$ref": "#/paths/~1tasks/parameters/2"
+          },
+          {
+            "$ref": "#/paths/~1tasks/parameters/3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of flow runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/flowRunWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Start flow run",
+        "description": "Starts a run of the workflow flow with the provided slug, passing the provided input data.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "startFlowRun",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "flow",
+                  "input"
+                ],
+                "properties": {
+                  "flow": {
+                    "type": "string",
+                    "pattern": "\\S",
+                    "description": "A flow slug in the format workflow-slug/flow-name. An optional version can be appended (workflow-slug/flow-name:version). If no version is provided, the latest version is used. Cannot be blank.",
+                    "example": "my-workflow-slug/my-flow"
+                  },
+                  "input": {
+                    "description": "Input data for a flow. Can be either an array (for positional arguments) or an object (for named parameters).",
+                    "oneOf": [
+                      {
+                        "type": "array",
+                        "items": {},
+                        "description": "Positional arguments passed to the flow function"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": {},
+                        "description": "Named parameters passed to the flow function as keyword arguments"
+                      }
+                    ]
+                  },
+                  "idempotencyKey": {
+                    "$ref": "#/paths/~1task-runs/post/requestBody/content/application~1json/schema/properties/idempotencyKey"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Flow run started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "flowId",
+                    "status"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "frn-d0hp8fs9c44c73a6f1qg"
+                    },
+                    "flowId": {
+                      "type": "string",
+                      "example": "flw-d0hp8fs9c44c73a6f1qg"
+                    },
+                    "status": {
+                      "$ref": "#/paths/~1flow-runs/get/parameters/4/schema/items"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/flow-runs/{flowRunId}": {
+      "parameters": [
+        {
+          "name": "flowRunId",
+          "in": "path",
+          "description": "The ID of the flow run",
+          "example": "frn-d0hp8fs9c44c73a6f1qg",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Retrieve flow run",
+        "description": "Retrieve the flow run with the provided ID, including its input and results.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "getFlowRun",
+        "responses": {
+          "200": {
+            "description": "Flow run details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "flowId",
+                    "status",
+                    "input",
+                    "results",
+                    "attempts"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "frn-d0hp8fs9c44c73a6f1qg"
+                    },
+                    "flowId": {
+                      "type": "string",
+                      "example": "flw-d0hp8fs9c44c73a6f1qg"
+                    },
+                    "status": {
+                      "$ref": "#/paths/~1flow-runs/get/parameters/4/schema/items"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "input": {
+                      "$ref": "#/paths/~1flow-runs/post/requestBody/content/application~1json/schema/properties/input"
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message if the flow run failed."
+                    },
+                    "errorDetails": {
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string",
+                          "enum": [
+                            "flow_determinism_error",
+                            "flow_step_limit_exceeded",
+                            "flow_payload_too_large",
+                            "flow_history_too_large"
+                          ]
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "seq": {
+                          "type": "integer"
+                        },
+                        "subKey": {
+                          "type": "string"
+                        },
+                        "flowAttempt": {
+                          "type": "integer"
+                        },
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "input_hash",
+                            "type",
+                            "unknown_type"
+                          ]
+                        },
+                        "expected": {
+                          "type": "string"
+                        },
+                        "actual": {
+                          "type": "string"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "format": "int64"
+                        },
+                        "value": {
+                          "type": "integer",
+                          "format": "int64"
+                        }
+                      }
+                    },
+                    "attempts": {
+                      "type": "array",
+                      "description": "The flow run's attempts. A flow run gets a new attempt when it resumes after its process is interrupted; it replays completed steps instead of rerunning them.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "attempt",
+                          "status"
+                        ],
+                        "properties": {
+                          "attempt": {
+                            "type": "integer",
+                            "description": "The 0-indexed attempt number."
+                          },
+                          "status": {
+                            "$ref": "#/paths/~1flow-runs/get/parameters/4/schema/items"
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "completedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "error": {
+                            "type": "string",
+                            "description": "Error message if the attempt failed."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancel flow run",
+        "description": "Cancel a running flow run with the provided ID.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "cancelFlowRun",
+        "responses": {
+          "204": {
+            "description": "Flow run canceled"
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/flow-runs/{flowRunId}/steps": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1flow-runs~1{flowRunId}/parameters/0"
+        }
+      ],
+      "get": {
+        "summary": "List flow run steps",
+        "description": "List the steps a flow run has recorded, in the order the flow started them. A page can hold fewer than `limit` steps and still have more after it, so page until `hasMore` is false.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "listFlowRunSteps",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of flow run steps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "steps",
+                    "hasMore"
+                  ],
+                  "properties": {
+                    "steps": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "seq",
+                          "stepKey",
+                          "type",
+                          "status",
+                          "startedAt"
+                        ],
+                        "properties": {
+                          "seq": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "The step's position in the flow run. Steps are numbered densely in the order the flow started them."
+                          },
+                          "stepKey": {
+                            "type": "string",
+                            "description": "The SDK's key for the step."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "For inline steps, the function's name. For detached steps, the task's registered name. Omitted for sleep steps."
+                          },
+                          "type": {
+                            "$ref": "#/paths/~1flow-runs~1{flowRunId}~1steps~1{stepSeq}/get/responses/200/content/application~1json/schema/properties/type"
+                          },
+                          "status": {
+                            "$ref": "#/paths/~1flow-runs~1{flowRunId}~1steps~1{stepSeq}/get/responses/200/content/application~1json/schema/properties/status"
+                          },
+                          "startedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "completedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "wakeAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "For sleep steps, when the sleep ends."
+                          },
+                          "childTaskRunId": {
+                            "type": "string",
+                            "description": "For detached steps, the ID of the task run the step started.",
+                            "example": "trn-d0hp8fs9c44c73a6f1qg"
+                          }
+                        }
+                      }
+                    },
+                    "cursor": {
+                      "type": "string",
+                      "description": "Pass as the `cursor` query parameter to fetch the next page. Absent on the last page."
+                    },
+                    "hasMore": {
+                      "type": "boolean",
+                      "description": "Whether another page of steps follows this one."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/flow-runs/{flowRunId}/steps/{stepSeq}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1flow-runs~1{flowRunId}/parameters/0"
+        },
+        {
+          "name": "stepSeq",
+          "in": "path",
+          "description": "The sequence number of the step within its flow run",
+          "schema": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Retrieve flow run step",
+        "description": "Retrieve a single step of a flow run, including its input, result and error. A sequence number can cover more than one step, so pass the `stepKey` the step listing reported to address one of those.",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "getFlowRunStep",
+        "parameters": [
+          {
+            "name": "stepKey",
+            "in": "query",
+            "description": "The SDK's key for the step, as `stepKey` reports it in the step listing. Steps that share a sequence number are told apart by it. Omit it for a step the SDK recorded without one.",
+            "schema": {
+              "type": "string"
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flow run step details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "seq",
+                    "stepKey",
+                    "type",
+                    "status",
+                    "startedAt"
+                  ],
+                  "properties": {
+                    "seq": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The step's position in the flow run. Steps are numbered densely in the order the flow started them."
+                    },
+                    "stepKey": {
+                      "type": "string",
+                      "description": "The SDK's key for the step."
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "For inline steps, the function's name. For detached steps, the task's registered name. Omitted for sleep steps."
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "The kind of step. `inline` runs a function inside the flow's process and retries in place. `detached` runs a registered task as its own task run. `sleep` is a durable sleep.",
+                      "enum": [
+                        "inline",
+                        "detached",
+                        "sleep"
+                      ],
+                      "x-enum-varnames": [
+                        "FlowRunStepTypeInline",
+                        "FlowRunStepTypeDetached",
+                        "FlowRunStepTypeSleep"
+                      ]
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "`running` until the step records an outcome, then `succeeded` or `failed`.",
+                      "enum": [
+                        "running",
+                        "succeeded",
+                        "failed"
+                      ],
+                      "x-enum-varnames": [
+                        "FlowRunStepStatusRunning",
+                        "FlowRunStepStatusSucceeded",
+                        "FlowRunStepStatusFailed"
+                      ]
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "completedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "wakeAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "For sleep steps, when the sleep ends."
+                    },
+                    "childTaskRunId": {
+                      "type": "string",
+                      "description": "For detached steps, the ID of the task run the step started.",
+                      "example": "trn-d0hp8fs9c44c73a6f1qg"
+                    },
+                    "input": {
+                      "description": "The step's input. For detached steps, the input of the child task run."
+                    },
+                    "result": {
+                      "description": "The step's result. Present only when the step succeeded; null when the step returned no value.",
+                      "nullable": true,
+                      "x-go-type": "json.RawMessage"
+                    },
+                    "error": {
+                      "type": "string",
+                      "description": "Error message if the step failed."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
     "/sandboxes": {
       "post": {
         "summary": "Create sandbox",
         "description": "Create a sandbox. Returns the initial sandbox snapshot synchronously.\n\nWith `snapshotId`: 404 with `code: snapshot_not_found` if the snapshot does not\nexist; 409 with `code: snapshot_not_available` if it is not `available`, or\n`code: snapshot_plan_mismatch` if a `runtime` snapshot was requested with a\ndifferent `plan`.\n\nWith `snapshotName`: 400 with `code: invalid_snapshot_name` if the name is\nmalformed, 400 without a code if `snapshotId` is also set, and 404 with\n`code: snapshot_not_found` if no `available` snapshot in the group has the\nname. The 409 cases above apply to the resolved snapshot.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n\n400 with `code: sandbox_group_limit_reached` if the owner has no default\nsandbox group and is already at its sandbox group limit.\n\n400 with `code: invalid_sandbox_plan` if `plan` is not one the API currently\naccepts. The message lists the accepted plans.\n\n400 with `code: invalid_timeout_seconds` if `timeoutSeconds` is below 0 or\nabove the plan's maximum: 2592000 (30 days), or 86400 (24 hours) on Hobby\nworkspaces.\n",
         "operationId": "create-sandbox",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "requestBody": {
           "required": true,
@@ -16882,7 +17738,7 @@
         "description": "List sandboxes for a single workspace. Sandboxes are scoped to the region of\ntheir workspace's sandbox group, so one workspace must be named per request.\n",
         "operationId": "list-sandboxes",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -16978,7 +17834,7 @@
         "description": "Create a sandbox group. The workspace's first group becomes its default.\nReturns 409 if the `name` is taken.\n",
         "operationId": "create-sandbox-group",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "requestBody": {
           "required": true,
@@ -17123,7 +17979,7 @@
         "description": "List sandbox groups for a single workspace, newest first. The default\npage size is 20 and the maximum is 100.\nUse the last item's cursor to fetch the next page, until it is empty.\n",
         "operationId": "list-sandbox-groups",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17206,7 +18062,7 @@
         "description": "Retrieve the sandbox with the provided ID.",
         "operationId": "retrieve-sandbox",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17262,7 +18118,7 @@
         "description": "List execution records for the sandbox, ordered by start time, newest first.",
         "operationId": "list-sandbox-executions",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17335,7 +18191,7 @@
         "description": "Retrieve one execution record for the sandbox.",
         "operationId": "retrieve-sandbox-execution",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17441,7 +18297,7 @@
         "description": "Terminate the sandbox with the provided ID. Idempotent: returns 204 from any\nstate, including `terminated`. Terminating a `creating` sandbox cancels\nboot/setup immediately.\n",
         "operationId": "terminate-sandbox",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17484,7 +18340,7 @@
         "description": "Capture a snapshot of a running sandbox. Returns 202 with the snapshot in\n`creating`. Poll until it is `available` or `failed`. The sandbox keeps\nrunning; a runtime capture pauses it briefly.\n\n400 with `code: invalid_snapshot_name` if `name` is malformed. 409 with\n`code: sandbox_not_running` if the sandbox is not `running`, or\n`code: sandbox_group_suspended` if the sandbox group is suspended.\n",
         "operationId": "create-sandbox-snapshot",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17662,7 +18518,7 @@
         "description": "Retrieve a sandbox group. 400 `invalid_sandbox_group_id` for a malformed ID.\n",
         "operationId": "retrieve-sandbox-group",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "responses": {
           "200": {
@@ -17703,7 +18559,7 @@
         "description": "Update a sandbox group's concurrency limit. Returns 400 for a malformed\nID (`invalid_sandbox_group_id`), missing `concurrencyLimit`, or a value\nbelow 1. The response returns the effective limit after applying Render's cap.\n",
         "operationId": "update-sandbox-group",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "requestBody": {
           "required": true,
@@ -17778,7 +18634,7 @@
         "description": "Snapshots in a sandbox group, newest first. Expired and deleted snapshots\nare omitted.\n\n400 with `code: invalid_sandbox_group_id` if `sandboxGroupId` is not a\nwell-formed `sbg-` ID, `code: invalid_owner_id` if `ownerId` is missing or\nrepeated, `code: invalid_status` for a status outside the snapshot status\nvocabulary, `code: invalid_cursor` for a malformed or unknown cursor, or\n`code: invalid_limit` for a limit outside 1 to 100.\n",
         "operationId": "list-sandbox-snapshots",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17876,7 +18732,7 @@
         "description": "One snapshot by ID. Deleted and expired snapshots return 404. A snapshot\nthat belongs to another sandbox group returns 404.\n\n400 with `code: invalid_sandbox_group_id` if `sandboxGroupId` is not a\nwell-formed `sbg-` ID, or `code: invalid_snapshot_id` if `snapshotId` is\nnot a well-formed `snp-` ID.\n",
         "operationId": "retrieve-sandbox-snapshot",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17928,7 +18784,7 @@
         "description": "Idempotent: returns 204 if the snapshot is already deleted or expired.\nSandboxes created from the snapshot are not affected. A snapshot that\nbelongs to another sandbox group returns 404.\n\n400 with `code: invalid_sandbox_group_id` when `sandboxGroupId` is malformed.\n400 with `code: invalid_snapshot_id` when `snapshotId` is malformed.\n409 with `code: snapshot_creating` while the capture is in progress.\n",
         "operationId": "delete-sandbox-snapshot",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -17990,7 +18846,7 @@
         "description": "Mint a short-lived, capability-scoped connect token that authorizes a\nsingle run operation against the specified sandbox. The response contains\nthe sandbox URI where the caller sends the command with the token as a bearer credential.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n",
         "operationId": "connect-sandbox-run",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -18109,7 +18965,7 @@
         "description": "Mint a short-lived, capability-scoped connect token that authorizes a\nsingle file upload or download against the sandbox, and return the\nsandbox-proxy endpoint to invoke with it. The caller streams the file\nbytes directly to (or from) that endpoint with the token as a bearer\ncredential. `application/octet-stream` carries a single file and\n`application/x-tar` a directory archive, with compression carried\nseparately by `Content-Encoding: gzip` in either direction; directory\ndownloads return `application/x-tar` with `Content-Encoding: gzip`. The\ntoken is bound to this sandbox, operation, and path, and expires\nshortly after issuance.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n",
         "operationId": "connect-sandbox-files",
         "tags": [
-          "Sandboxes (Beta)"
+          "Sandboxes"
         ],
         "parameters": [
           {
@@ -18118,7 +18974,7 @@
           {
             "name": "path",
             "in": "query",
-            "description": "Path in the sandbox this token authorizes. A relative path resolves within the sandbox's home directory (\".\" is the home directory itself); an absolute path addresses the sandbox filesystem root. For an archive upload, the extraction root; for a download, the file or directory to fetch.",
+            "description": "Path in the sandbox this token authorizes. A relative path resolves within the sandbox's working directory, which is the image's WORKDIR or, when the image sets none, the home directory (\".\" is the working directory itself); an absolute path addresses the sandbox filesystem root. For an archive upload, the extraction root; for a download, the file or directory to fetch.",
             "schema": {
               "type": "string"
             },
@@ -18751,6 +19607,7 @@
               "UpdateOrgPaymentMethodEvent",
               "UpdateOtelIntegrationEvent",
               "UpdateSSOConnectionEvent",
+              "UpdateServiceBuildSourceEvent",
               "UpdateServiceNameEvent",
               "UpdateWebhookEvent",
               "UpdateWorkspacePaymentMethodEvent",
@@ -23199,6 +24056,36 @@
         "properties": {
           "taskRun": {
             "$ref": "#/paths/~1task-runs/post/responses/202/content/application~1json/schema"
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/cursor"
+          }
+        }
+      },
+      "flowWithCursor": {
+        "type": "object",
+        "required": [
+          "flow",
+          "cursor"
+        ],
+        "properties": {
+          "flow": {
+            "$ref": "#/paths/~1flows~1{flowId}/get/responses/200/content/application~1json/schema"
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/cursor"
+          }
+        }
+      },
+      "flowRunWithCursor": {
+        "type": "object",
+        "required": [
+          "flowRun",
+          "cursor"
+        ],
+        "properties": {
+          "flowRun": {
+            "$ref": "#/paths/~1flow-runs/post/responses/202/content/application~1json/schema"
           },
           "cursor": {
             "$ref": "#/components/schemas/cursor"
