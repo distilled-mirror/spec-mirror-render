@@ -15462,6 +15462,10 @@
                     },
                     "autoDeployTrigger": {
                       "$ref": "#/paths/~1workflows/post/requestBody/content/application~1json/schema/properties/autoDeployTrigger"
+                    },
+                    "defaultVersionId": {
+                      "type": "string",
+                      "description": "ID of the workflow version that new task runs use by default. Omitted until a version has been registered."
                     }
                   }
                 }
@@ -17538,7 +17542,7 @@
                   },
                   "timeoutSeconds": {
                     "type": "integer",
-                    "description": "Maximum sandbox lifetime in seconds. Sandbox is terminated when reached. Use 0 for no timeout.",
+                    "description": "Maximum sandbox lifetime in seconds. Sandbox is terminated when reached. Use 0 for no timeout. Positive values must be at least 60.",
                     "default": 86400
                   },
                   "idleTimeoutSeconds": {
@@ -21943,6 +21947,7 @@
           "invalid_snapshot_name",
           "sandbox_group_suspended",
           "sandbox_group_limit_reached",
+          "default_sandbox_group_not_deletable",
           "invalid_sandbox_plan",
           "invalid_timeout_seconds",
           "build_source_region_mismatch"
@@ -21975,6 +21980,7 @@
           "ErrorCodeInvalidSnapshotName",
           "ErrorCodeSandboxGroupSuspended",
           "ErrorCodeSandboxGroupLimitReached",
+          "ErrorCodeDefaultSandboxGroupNotDeletable",
           "ErrorCodeInvalidSandboxPlan",
           "ErrorCodeInvalidTimeoutSeconds",
           "ErrorCodeBuildSourceRegionMismatch"
@@ -22007,6 +22013,7 @@
           "A snapshot name is empty, longer than 64 characters, or starts with snp-.",
           "A create, connect, or snapshot request named a sandbox whose group is suspended.",
           "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit.",
+          "A delete of the owner's default sandbox group.",
           "A sandbox create asked for a plan that does not exist or is not offered.",
           "A sandbox create asked for a timeoutSeconds below 0 or above the maximum.",
           "A service create or update linked a git-backed Build Source in a different region than the service."
