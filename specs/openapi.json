@@ -17426,7 +17426,7 @@
     "/sandboxes": {
       "post": {
         "summary": "Create sandbox",
-        "description": "Create a sandbox. Returns the initial sandbox snapshot synchronously.\n\nWith `snapshotId`: 404 with `code: snapshot_not_found` if the snapshot does not\nexist; 409 with `code: snapshot_not_available` if it is not `available`, or\n`code: snapshot_plan_mismatch` if a `runtime` snapshot was requested with a\ndifferent `plan`.\n\nWith `snapshotName`: 400 with `code: invalid_snapshot_name` if the name is\nmalformed, 400 without a code if `snapshotId` is also set, and 404 with\n`code: snapshot_not_found` if no `available` snapshot in the group has the\nname. The 409 cases above apply to the resolved snapshot.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n\n400 with `code: sandbox_group_limit_reached` if the owner has no default\nsandbox group and is already at its sandbox group limit.\n\n400 with `code: invalid_sandbox_plan` if `plan` is not one the API currently\naccepts. The message lists the accepted plans.\n\n400 with `code: invalid_timeout_seconds` if `timeoutSeconds` is below 0 or\nabove 2592000 (30 days).\n",
+        "description": "Create a sandbox. Returns the initial sandbox snapshot synchronously.\n\nWith `snapshotId`: 404 with `code: snapshot_not_found` if the snapshot does not\nexist; 409 with `code: snapshot_not_available` if it is not `available`, or\n`code: snapshot_plan_mismatch` if a `runtime` snapshot was requested with a\ndifferent `plan`.\n\nWith `snapshotName`: 400 with `code: invalid_snapshot_name` if the name is\nmalformed, 400 without a code if `snapshotId` is also set, and 404 with\n`code: snapshot_not_found` if no `available` snapshot in the group has the\nname. The 409 cases above apply to the resolved snapshot.\n\n400 with `code: invalid_sandbox_name` if `name` is longer than 64 characters\nor starts with `sbx-`.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n\n400 with `code: sandbox_group_limit_reached` if the owner has no default\nsandbox group and is already at its sandbox group limit.\n\n400 with `code: invalid_sandbox_plan` if `plan` is not one the API currently\naccepts. The message lists the accepted plans.\n\n400 with `code: invalid_timeout_seconds` if `timeoutSeconds` is below 0 or\nabove 2592000 (30 days).\n",
         "operationId": "create-sandbox",
         "tags": [
           "Sandboxes"
@@ -17453,6 +17453,11 @@
                     ],
                     "description": "Group to create the sandbox in; defaults to the workspace's default group."
                   },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "A label for the sandbox, like `my-agent`. It isn't unique, so the\nsandbox ID stays the handle. It can't start with `sbx-`.\n"
+                  },
                   "networkPolicy": {
                     "type": "object",
                     "description": "Set either `type` or its deprecated alias `default`. Sending both is\nonly accepted when they name the same policy.\n",
@@ -17469,7 +17474,7 @@
                             "description": "How outbound traffic is handled. `allow-all`, `deny-all`, or\n`allow-list` (requires additional `rules`).\n"
                           }
                         ],
-                        "description": "How outbound traffic is handled. `allow-all`, `deny-all`, or\n`allow-list` (requires additional `rules`). Either `type` or `default`\nis required when `networkPolicy` is provided. Omitting\n`networkPolicy` defaults to `allow-all`.\n"
+                        "description": "How outbound traffic is handled. `allow-all`, `deny-all`, or\n`allow-list` (requires additional `rules`). Either `type` or `default`\nis required when `networkPolicy` is provided. Defaults to `allow-all`,\nor to the source sandbox's network policy when starting from a\nsnapshot. Include `networkPolicy` to override.\n"
                       },
                       "default": {
                         "allOf": [
@@ -17565,7 +17570,7 @@
                         "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1snapshots~1{snapshotId}/parameters/1/schema"
                       }
                     ],
-                    "description": "Start from this snapshot instead of the base image. Must be `available`\nand in the same sandbox group. For a `runtime` snapshot, `plan` must\nmatch the snapshot's plan.\n"
+                    "description": "Start from this snapshot instead of the base image. Must be `available`\nand in the same sandbox group. For a `runtime` snapshot, `plan` must\nmatch the snapshot's plan. The new sandbox uses the source sandbox's\nnetwork policy. Include `networkPolicy` to set a different one.\n"
                   },
                   "snapshotName": {
                     "allOf": [
@@ -17610,6 +17615,11 @@
                     "id": {
                       "$ref": "#/paths/~1sandboxes~1{sandboxId}/parameters/0/schema"
                     },
+                    "name": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The label set when the sandbox was created."
+                    },
                     "sandboxGroupId": {
                       "allOf": [
                         {
@@ -17619,7 +17629,7 @@
                       "description": "The sandbox group this sandbox belongs to."
                     },
                     "status": {
-                      "$ref": "#/paths/~1sandboxes/get/parameters/4/schema/items"
+                      "$ref": "#/paths/~1sandboxes/get/parameters/5/schema/items"
                     },
                     "plan": {
                       "anyOf": [
@@ -17762,6 +17772,15 @@
               "type": "string",
               "pattern": "^sbg-[0-9a-v]{20}$",
               "example": "sbg-cph1rs3idesc73a2b2mg"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "description": "Return only sandboxes with exactly this name. Names aren't unique, so\nthis can match more than one sandbox.\n",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -21945,6 +21964,7 @@
           "invalid_cursor",
           "invalid_limit",
           "invalid_snapshot_name",
+          "invalid_sandbox_name",
           "sandbox_group_suspended",
           "sandbox_group_limit_reached",
           "default_sandbox_group_not_deletable",
@@ -21978,6 +21998,7 @@
           "ErrorCodeInvalidCursor",
           "ErrorCodeInvalidLimit",
           "ErrorCodeInvalidSnapshotName",
+          "ErrorCodeInvalidSandboxName",
           "ErrorCodeSandboxGroupSuspended",
           "ErrorCodeSandboxGroupLimitReached",
           "ErrorCodeDefaultSandboxGroupNotDeletable",
@@ -22011,6 +22032,7 @@
           "A list request passed a cursor that is malformed or not visible to the caller.",
           "A list request passed a limit that is not a positive integer within the route's maximum.",
           "A snapshot name is empty, longer than 64 characters, or starts with snp-.",
+          "A sandbox name is longer than 64 characters or starts with sbx-.",
           "A create, connect, or snapshot request named a sandbox whose group is suspended.",
           "A sandbox group create, or a sandbox create that needs a new default group, for an owner already at its sandbox group limit.",
           "A delete of the owner's default sandbox group.",
