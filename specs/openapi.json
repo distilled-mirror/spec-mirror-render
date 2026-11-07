@@ -17547,15 +17547,13 @@
                   },
                   "timeoutSeconds": {
                     "type": "integer",
-                    "description": "Maximum sandbox lifetime in seconds. Sandbox is terminated when reached. Use 0 for no timeout. Positive values must be at least 60.",
-                    "default": 86400
+                    "description": "Maximum sandbox lifetime in seconds. Sandbox is terminated when reached.\nUse 0 for no timeout. Positive values must be at least 60. Defaults to\n86400, or to the source sandbox's timeout when starting from a snapshot.\n"
                   },
                   "idleTimeoutSeconds": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 86400,
-                    "description": "Seconds of inactivity before the sandbox is suspended. Use 0 to disable automatic idle suspension. Positive values must be at least 300.",
-                    "default": 900
+                    "description": "Seconds of inactivity before the sandbox is suspended. Use 0 to disable\nautomatic idle suspension. Positive values must be at least 300. Defaults\nto 900, or to the source sandbox's idle timeout when starting from a\nsnapshot.\n"
                   },
                   "env": {
                     "type": "object",
@@ -17570,7 +17568,7 @@
                         "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1snapshots~1{snapshotId}/parameters/1/schema"
                       }
                     ],
-                    "description": "Start from this snapshot instead of the base image. Must be `available`\nand in the same sandbox group. For a `runtime` snapshot, `plan` must\nmatch the snapshot's plan. The new sandbox uses the source sandbox's\nnetwork policy. Include `networkPolicy` to set a different one.\n"
+                    "description": "Start from this snapshot instead of the base image. Must be `available`\nand in the same sandbox group. For a `runtime` snapshot, `plan` must\nmatch the snapshot's plan. The new sandbox uses the source sandbox's\nnetwork policy, timeout and idle timeout. Include `networkPolicy`,\n`timeoutSeconds` or `idleTimeoutSeconds` to set a different one.\n"
                   },
                   "snapshotName": {
                     "allOf": [
@@ -17579,6 +17577,20 @@
                       }
                     ],
                     "description": "Start from the snapshot this name currently resolves to in the sandbox\ngroup. Mutually exclusive with `snapshotId`. Same restore rules as\n`snapshotId`.\n"
+                  },
+                  "buildId": {
+                    "allOf": [
+                      {
+                        "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1builds~1{buildId}/parameters/1/schema"
+                      }
+                    ],
+                    "description": "Start from this build's image instead of the base image. The build\nmust have succeeded and be in the sandbox's group: 404 with `code:\nbuild_not_found` if it isn't in the group, and 409 with `code:\nbuild_not_succeeded` if it hasn't succeeded. Mutually exclusive\nwith `buildName`, `snapshotId` and `snapshotName`.\n"
+                  },
+                  "buildName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "description": "Start from the newest succeeded build with this name in the\nsandbox's group. 404 with `code: build_not_found` if the group has\nno build with the name, and 409 with `code: build_not_succeeded` if\nnone of them has succeeded. Mutually exclusive with `buildId`,\n`snapshotId` and `snapshotName`.\n"
                   }
                 }
               },
@@ -18646,6 +18658,307 @@
         }
       }
     },
+    "/sandbox-groups/{sandboxGroupId}/builds": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}/parameters/0"
+        }
+      ],
+      "get": {
+        "summary": "List sandbox builds",
+        "description": "Builds in a sandbox group, newest first.\n\n400 with `code: invalid_sandbox_group_id` if `sandboxGroupId` is not a\nwell-formed `sbg-` ID, `code: invalid_status` for a status outside the\nbuild status vocabulary, `code: invalid_cursor` for a malformed cursor,\nor `code: invalid_limit` for a limit outside 1 to 100.\n",
+        "operationId": "list-sandbox-builds",
+        "tags": [
+          "Sandboxes"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/cursorParam"
+          },
+          {
+            "$ref": "#/components/parameters/limitParam"
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "description": "Return only builds of the image with this name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filter by build status.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "running",
+                  "succeeded",
+                  "failed"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/sandboxBuildWithCursor"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create sandbox build",
+        "description": "Starts converting an OCI image into a sandbox image, and returns the\nbuild without waiting for it. Poll the build until it `succeeded` or\n`failed`, then pass its ID as `buildId` to create a sandbox. A request\nfor a name and image digest the group already has, or is building,\nreturns that build.\n\n400 with `code: invalid_sandbox_group_id` if `sandboxGroupId` is not a\nwell-formed `sbg-` ID, or a message if the image is invalid or its\nregistry can't serve it.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n\n429 if the group already has as many builds pending or running as its\nlimit allows. The message includes the limit.\n",
+        "operationId": "create-sandbox-build",
+        "tags": [
+          "Sandboxes"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "sourceImage"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255,
+                    "description": "Names the image. Every build of an image shares it."
+                  },
+                  "sourceImage": {
+                    "type": "string",
+                    "description": "The image to convert, by tag or digest.",
+                    "example": "python:3.13"
+                  },
+                  "registryCredential": {
+                    "type": "object",
+                    "required": [
+                      "username",
+                      "password"
+                    ],
+                    "description": "Pulls `sourceImage` from a private registry. Used for this build only and never stored.",
+                    "properties": {
+                      "username": {
+                        "type": "string"
+                      },
+                      "password": {
+                        "type": "string",
+                        "format": "password"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "sandboxGroupId",
+                    "name",
+                    "source",
+                    "sourceDigest",
+                    "status",
+                    "createdAt"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1builds~1{buildId}/parameters/1/schema"
+                    },
+                    "sandboxGroupId": {
+                      "$ref": "#/paths/~1sandboxes/get/parameters/1/schema"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Names the image. Every build of an image shares it."
+                    },
+                    "source": {
+                      "type": "object",
+                      "required": [
+                        "repository",
+                        "image",
+                        "reference"
+                      ],
+                      "properties": {
+                        "repository": {
+                          "type": "string",
+                          "example": "docker.io/library"
+                        },
+                        "image": {
+                          "type": "string",
+                          "example": "python"
+                        },
+                        "reference": {
+                          "type": "string",
+                          "example": "3.13"
+                        }
+                      }
+                    },
+                    "sourceDigest": {
+                      "type": "string",
+                      "description": "The image digest the build converts.",
+                      "example": "sha256:c19d4a1..."
+                    },
+                    "status": {
+                      "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1builds/get/parameters/3/schema/items"
+                    },
+                    "failureReason": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Why the build failed. Null unless `failed`."
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "finishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "When the build succeeded or failed."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/409Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/sandbox-groups/{sandboxGroupId}/builds/{buildId}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}/parameters/0"
+        },
+        {
+          "name": "buildId",
+          "in": "path",
+          "required": true,
+          "description": "The ID of the build",
+          "schema": {
+            "type": "string",
+            "pattern": "^sbb-[0-9a-v]{20}$",
+            "example": "sbb-cph1rs3idesc73a2b2mg"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Retrieve sandbox build",
+        "description": "One build by ID. 404 with `code: build_not_found` if the build doesn't\nexist or belongs to another sandbox group.\n\n400 with `code: invalid_sandbox_group_id` if `sandboxGroupId` is not a\nwell-formed `sbg-` ID, or `invalid build ID` if `buildId` is not a\nwell-formed `sbb-` ID.\n",
+        "operationId": "retrieve-sandbox-build",
+        "tags": [
+          "Sandboxes"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1builds/post/responses/201/content/application~1json/schema"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
     "/sandbox-groups/{sandboxGroupId}/snapshots": {
       "parameters": [
         {
@@ -18866,7 +19179,7 @@
       ],
       "post": {
         "summary": "Create a connect token for a sandbox run",
-        "description": "Mint a short-lived, capability-scoped connect token that authorizes a\nsingle run operation against the specified sandbox. The response contains\nthe sandbox URI where the caller sends the command with the token as a bearer credential.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n",
+        "description": "Mint a short-lived, capability-scoped connect token that authorizes a\nsingle run operation against the specified sandbox. The response contains\nthe sandbox URI where the caller sends the command with the token as a bearer credential.\n\n409 with `code: sandbox_not_running` if the sandbox is terminated or\nerrored, or `code: sandbox_group_suspended` if the sandbox group is suspended.\n",
         "operationId": "connect-sandbox-run",
         "tags": [
           "Sandboxes"
@@ -18952,6 +19265,9 @@
           "404": {
             "$ref": "#/components/responses/404NotFound"
           },
+          "409": {
+            "$ref": "#/components/responses/409Conflict"
+          },
           "429": {
             "$ref": "#/components/responses/429RateLimit"
           },
@@ -18985,7 +19301,7 @@
       ],
       "post": {
         "summary": "Mint a connect token for a sandbox file transfer",
-        "description": "Mint a short-lived, capability-scoped connect token that authorizes a\nsingle file upload or download against the sandbox, and return the\nsandbox-proxy endpoint to invoke with it. The caller streams the file\nbytes directly to (or from) that endpoint with the token as a bearer\ncredential. `application/octet-stream` carries a single file and\n`application/x-tar` a directory archive, with compression carried\nseparately by `Content-Encoding: gzip` in either direction; directory\ndownloads return `application/x-tar` with `Content-Encoding: gzip`. The\ntoken is bound to this sandbox, operation, and path, and expires\nshortly after issuance.\n\n409 with `code: sandbox_group_suspended` if the sandbox group is suspended.\n",
+        "description": "Mint a short-lived, capability-scoped connect token that authorizes a\nsingle file upload or download against the sandbox, and return the\nsandbox-proxy endpoint to invoke with it. The caller streams the file\nbytes directly to (or from) that endpoint with the token as a bearer\ncredential. `application/octet-stream` carries a single file and\n`application/x-tar` a directory archive, with compression carried\nseparately by `Content-Encoding: gzip` in either direction; directory\ndownloads return `application/x-tar` with `Content-Encoding: gzip`. The\ntoken is bound to this sandbox, operation, and path, and expires\nshortly after issuance.\n\n409 with `code: sandbox_not_running` if the sandbox is terminated or\nerrored, or `code: sandbox_group_suspended` if the sandbox group is suspended.\n",
         "operationId": "connect-sandbox-files",
         "tags": [
           "Sandboxes"
@@ -19026,6 +19342,9 @@
           },
           "404": {
             "$ref": "#/components/responses/404NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/409Conflict"
           },
           "429": {
             "$ref": "#/components/responses/429RateLimit"
@@ -23793,6 +24112,22 @@
         "properties": {
           "snapshot": {
             "$ref": "#/paths/~1sandboxes~1{sandboxId}~1snapshots/post/responses/202/content/application~1json/schema"
+          },
+          "cursor": {
+            "$ref": "#/components/schemas/cursor"
+          }
+        }
+      },
+      "sandboxBuildWithCursor": {
+        "type": "object",
+        "description": "A sandbox build with a cursor",
+        "required": [
+          "build",
+          "cursor"
+        ],
+        "properties": {
+          "build": {
+            "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1builds/post/responses/201/content/application~1json/schema"
           },
           "cursor": {
             "$ref": "#/components/schemas/cursor"
