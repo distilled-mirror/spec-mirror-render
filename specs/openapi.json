@@ -16430,7 +16430,9 @@
                         "succeeded",
                         "failed",
                         "canceled",
-                        "paused"
+                        "paused",
+                        "suspended",
+                        "sleeping"
                       ]
                     },
                     "results": {
@@ -16771,7 +16773,9 @@
                   "succeeded",
                   "failed",
                   "canceled",
-                  "paused"
+                  "paused",
+                  "suspended",
+                  "sleeping"
                 ],
                 "x-enum-varnames": [
                   "FlowRunStatusPending",
@@ -16779,7 +16783,9 @@
                   "FlowRunStatusSucceeded",
                   "FlowRunStatusFailed",
                   "FlowRunStatusCanceled",
-                  "FlowRunStatusPaused"
+                  "FlowRunStatusPaused",
+                  "FlowRunStatusSuspended",
+                  "FlowRunStatusSleeping"
                 ]
               }
             }
