@@ -18470,7 +18470,7 @@
                       "description": "`filesystem` captures the writable filesystem and restores onto any plan.\n`runtime` also captures memory and CPU state and restores only onto the\nplan of the source sandbox.\n"
                     },
                     "status": {
-                      "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1snapshots/get/parameters/3/schema/items"
+                      "$ref": "#/paths/~1sandbox-groups~1{sandboxGroupId}~1snapshots/get/parameters/4/schema/items"
                     },
                     "plan": {
                       "anyOf": [
@@ -18862,7 +18862,13 @@
                     "failureReason": {
                       "type": "string",
                       "nullable": true,
-                      "description": "Why the build failed. Null unless `failed`."
+                      "description": "Why the build failed. Null unless `failed`. It can include the\nregistry's own error text, so show it as detail alongside a\nmessage chosen from `failureCode` rather than as the headline.\n"
+                    },
+                    "failureCode": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Why the build failed, for code to check. Null unless `failed`. The\nsandboxBuildFailureCode schema lists the codes. Treat a code you\ndon't recognize as `internal_error`.\n",
+                      "example": "image_pull_failed"
                     },
                     "createdAt": {
                       "type": "string",
@@ -18984,6 +18990,15 @@
             "in": "query",
             "required": true,
             "description": "The ID of the workspace whose snapshots to return.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "required": false,
+            "description": "Return only snapshots with exactly this name. Each snapshot taken\nwith a name is a new version, so this lists every version, newest\nfirst. The first `available` one is the version `snapshotName`\nboots on sandbox create.\n",
             "schema": {
               "type": "string"
             }
@@ -19205,6 +19220,8 @@
                 "properties": {
                   "command": {
                     "type": "string",
+                    "deprecated": true,
+                    "x-deprecated-reason": "Ignored. The sandbox timeline records the command sent in the run request.",
                     "description": "Command text for the sandbox event timeline."
                   }
                 }
