@@ -14056,6 +14056,27 @@
         "tags": [
           "Build Sources"
         ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "clearCache": {
+                    "type": "string",
+                    "enum": [
+                      "clear",
+                      "do_not_clear"
+                    ],
+                    "default": "do_not_clear",
+                    "description": "If `clear`, Render clears the build source's build cache before building. This can be useful if you're experiencing issues with your build."
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "Build started",
@@ -18410,10 +18431,18 @@
                     "example": "gold",
                     "description": "Case sensitive. Scoped to the sandbox group. Must not start with `snp-`\nso clients can tell a name from a snapshot ID. Several snapshots may\nshare a name; the most recently available one is the one the name\nresolves to.\n"
                   },
+                  "ttlSeconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "x-go-name": "TTLSeconds",
+                    "description": "How long the snapshot lives after its last use, in seconds. Each time you\ncreate a sandbox from the snapshot, the snapshot lives for this long again.\nUse 0 to keep the snapshot until you delete it. Omit to use Render's\ndefault snapshot lifetime. Do not set both `ttlSeconds` and `expiresAt`.\n"
+                  },
                   "expiresAt": {
                     "type": "string",
                     "format": "date-time",
-                    "description": "The time after which the snapshot can no longer be retrieved or restored.\nMust be in the future. Omit to use Render's default snapshot lifetime.\n"
+                    "deprecated": true,
+                    "x-deprecated-reason": "Use ttlSeconds instead.",
+                    "description": "Deprecated. Use `ttlSeconds`. Must be in the future. Render sets the TTL\nto the time from the request until `expiresAt`.\n"
                   }
                 }
               }
@@ -18497,7 +18526,13 @@
                     "expiresAt": {
                       "type": "string",
                       "format": "date-time",
-                      "description": "The time after which the snapshot can no longer be retrieved or restored.\nSet by Render when the create request did not specify one.\n"
+                      "description": "The time after which the snapshot can no longer be retrieved or restored.\nEach time you create a sandbox from the snapshot, Render moves this time\nforward so that the snapshot lives for its TTL after that use. For a\nsnapshot that does not expire (a TTL of 0), this is 9999-12-31T23:59:59Z.\n"
+                    },
+                    "ttlSeconds": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "x-go-name": "TTLSeconds",
+                      "description": "How long the snapshot lives after its last use, in seconds. 0 means the\nsnapshot does not expire. Absent for a snapshot that was created before\nsnapshots had a TTL. Such a snapshot uses Render's default snapshot lifetime.\n"
                     },
                     "sizeBytes": {
                       "type": "integer",
@@ -18958,6 +18993,43 @@
           },
           "404": {
             "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete sandbox build",
+        "description": "Deletes one build: one version of an image. The build no longer\nappears in lists, can't be retrieved, and can't start sandboxes,\nincluding through the image's name. Deleting a deleted build returns 204.\n\n409 with `code: image_in_use` while sandboxes that aren't terminated, or\nsnapshots that haven't expired, still boot from the build. That includes\nsnapshots of sandboxes restored from such snapshots, and paused\nsandboxes. The message lists up to 10 of them. Delete them, or wait for\nthem to expire, and retry.\n\n404 with `code: build_not_found` if the build doesn't exist or belongs\nto another sandbox group.\n\n400 with `code: invalid_sandbox_group_id` if `sandboxGroupId` is not a\nwell-formed `sbg-` ID, or `invalid build ID` if `buildId` is not a\nwell-formed `sbb-` ID.\n",
+        "operationId": "delete-sandbox-build",
+        "tags": [
+          "Sandboxes"
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/409Conflict"
           },
           "429": {
             "$ref": "#/components/responses/429RateLimit"
@@ -22312,7 +22384,8 @@
           "default_sandbox_group_not_deletable",
           "invalid_sandbox_plan",
           "invalid_timeout_seconds",
-          "build_source_region_mismatch"
+          "build_source_region_mismatch",
+          "image_in_use"
         ],
         "x-enum-varnames": [
           "ErrorCodeInsufficientTokenScope",
@@ -22346,7 +22419,8 @@
           "ErrorCodeDefaultSandboxGroupNotDeletable",
           "ErrorCodeInvalidSandboxPlan",
           "ErrorCodeInvalidTimeoutSeconds",
-          "ErrorCodeBuildSourceRegionMismatch"
+          "ErrorCodeBuildSourceRegionMismatch",
+          "ErrorCodeImageInUse"
         ],
         "x-enum-descriptions": [
           "The scoped API token does not satisfy the endpoint's minimum scope requirements.",
@@ -22380,7 +22454,8 @@
           "A delete of the owner's default sandbox group.",
           "A sandbox create asked for a plan that does not exist or is not offered.",
           "A sandbox create asked for a timeoutSeconds below 0 or above the maximum.",
-          "A service create or update linked a git-backed Build Source in a different region than the service."
+          "A service create or update linked a git-backed Build Source in a different region than the service.",
+          "A sandbox image delete named a build that sandboxes or snapshots still boot from; the message lists them."
         ]
       },
       "pullRequestPreviewsEnabled": {
