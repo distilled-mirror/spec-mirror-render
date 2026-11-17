@@ -17352,6 +17352,13 @@
               "type": "string"
             },
             "required": false
+          },
+          {
+            "in": "query",
+            "name": "includeAttempts",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -17369,6 +17376,12 @@
                     "startedAt"
                   ],
                   "properties": {
+                    "failedAttempts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/paths/~1flow-runs~1{flowRunId}~1steps~1{stepSeq}~1attempts~1{attempt}/get/responses/200/content/application~1json/schema/allOf/0"
+                      }
+                    },
                     "seq": {
                       "type": "integer",
                       "minimum": 0,
@@ -17441,6 +17454,119 @@
                       "description": "Error message if the step failed."
                     }
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/flow-runs/{flowRunId}/steps/{stepSeq}/attempts/{attempt}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1flow-runs~1{flowRunId}/parameters/0"
+        },
+        {
+          "$ref": "#/paths/~1flow-runs~1{flowRunId}~1steps~1{stepSeq}/parameters/1"
+        },
+        {
+          "in": "path",
+          "name": "attempt",
+          "required": true,
+          "schema": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 4294967295
+          }
+        }
+      ],
+      "get": {
+        "summary": "Retrieve recorded failed step attempt",
+        "tags": [
+          "Workflow Flows"
+        ],
+        "operationId": "getFlowRunStepAttempt",
+        "parameters": [
+          {
+            "$ref": "#/paths/~1flow-runs~1{flowRunId}~1steps~1{stepSeq}/get/parameters/0"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flow run step details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "attempt",
+                        "flowAttempt",
+                        "startedAt",
+                        "completedAt"
+                      ],
+                      "properties": {
+                        "attempt": {
+                          "type": "integer",
+                          "format": "int64",
+                          "minimum": 0,
+                          "maximum": 4294967295
+                        },
+                        "flowAttempt": {
+                          "type": "integer",
+                          "format": "int64",
+                          "minimum": 0,
+                          "maximum": 4294967295
+                        },
+                        "startedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "completedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "retryAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "error"
+                      ],
+                      "properties": {
+                        "error": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -24223,18 +24349,16 @@
           },
           {
             "type": "object",
-            "required": [
-              "envVars",
-              "secretFiles"
-            ],
             "properties": {
               "envVars": {
+                "description": "Omitted if the caller doesn't have the permission to read the environment group's secret values.",
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/envVar"
                 }
               },
               "secretFiles": {
+                "description": "Omitted if the caller doesn't have the permission to read the environment group's secret values.",
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/secretFile"
