@@ -18587,6 +18587,62 @@
         }
       }
     },
+    "/sandboxes/{sandboxId}/suspend": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1sandboxes~1{sandboxId}/parameters/0"
+        }
+      ],
+      "post": {
+        "summary": "Suspend sandbox",
+        "description": "Suspend the running sandbox with the provided ID. Returns HTTP 202 after the sandbox starts suspending, or if it is already `suspending` or `suspended`. Retrieve the sandbox until its status is `suspended`. Open commands and connections end. The next connection resumes the sandbox.\n",
+        "operationId": "suspend-sandbox",
+        "tags": [
+          "Sandboxes"
+        ],
+        "parameters": [
+          {
+            "$ref": "#/paths/~1sandboxes~1{sandboxId}/get/parameters/0"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The sandbox is suspending or is already suspended."
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "409": {
+            "description": "The current state of the resource conflicts with this request.\n\n- `sandbox_not_running`: The sandbox is not `running`, `suspending`, or `suspended`.\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
     "/sandboxes/{sandboxId}/snapshots": {
       "parameters": [
         {
