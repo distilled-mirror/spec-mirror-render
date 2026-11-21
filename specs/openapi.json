@@ -7348,13 +7348,40 @@
           {
             "name": "resource",
             "in": "query",
-            "required": true,
-            "description": "Filter logs by their resource. A resource is the id of a server, cronjob, job, postgres, redis, workflow, or sandbox group.",
+            "required": false,
+            "description": "Filter logs by their resource. A resource is the id of a server, cronjob, job, postgres, redis, workflow, or sandbox group. Required unless `project` is provided.",
             "schema": {
               "type": "array",
               "items": {
                 "type": "string"
               }
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "required": false,
+            "description": "The ID of a project to return logs for. The query covers the project's services, cron jobs, Postgres databases, and Key Value instances. Combine with `resource` to narrow the query to specific resources in the project.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "environment",
+            "in": "query",
+            "required": false,
+            "description": "The ID of an environment in the project to return logs for. Requires `project`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "description": "The region to return logs for, such as `oregon`. Requires `project`. Required when the project's or environment's resources are in more than one region.",
+            "schema": {
+              "type": "string"
             }
           },
           {
@@ -7510,7 +7537,14 @@
             "$ref": "#/components/responses/Logs200Response"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "description": "Bad request. The error body's optional `code` field identifies\nspecific failures that clients can handle machine-readably.\n\nError codes:\n- `multiple_regions`: the project's or environment's resources\n  are in more than one region; provide `region` to query one\n- `too_many_resources`: the project or environment has more\n  resources than a single query supports; provide `resource`\n  to narrow the query\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/401Unauthorized"
@@ -7606,6 +7640,15 @@
             "$ref": "#/paths/~1logs/get/parameters/16"
           },
           {
+            "$ref": "#/paths/~1logs/get/parameters/17"
+          },
+          {
+            "$ref": "#/paths/~1logs/get/parameters/18"
+          },
+          {
+            "$ref": "#/paths/~1logs/get/parameters/19"
+          },
+          {
             "$ref": "#/components/parameters/limitParam"
           }
         ],
@@ -7682,7 +7725,14 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "description": "Bad request. The error body's optional `code` field identifies\nspecific failures that clients can handle machine-readably.\n\nError codes:\n- `multiple_regions`: the project's or environment's resources\n  are in more than one region; provide `region` to query one\n- `too_many_resources`: the project or environment has more\n  resources than a single query supports; provide `resource`\n  to narrow the query\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/401Unauthorized"
@@ -7795,6 +7845,15 @@
             "$ref": "#/paths/~1logs/get/parameters/16"
           },
           {
+            "$ref": "#/paths/~1logs/get/parameters/17"
+          },
+          {
+            "$ref": "#/paths/~1logs/get/parameters/18"
+          },
+          {
+            "$ref": "#/paths/~1logs/get/parameters/19"
+          },
+          {
             "$ref": "#/components/parameters/limitParam"
           }
         ],
@@ -7803,7 +7862,14 @@
             "$ref": "#/components/responses/LogsValues200Response"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "description": "Bad request. The error body's optional `code` field identifies\nspecific failures that clients can handle machine-readably.\n\nError codes:\n- `multiple_regions`: the project's or environment's resources\n  are in more than one region; provide `region` to query one\n- `too_many_resources`: the project or environment has more\n  resources than a single query supports; provide `resource`\n  to narrow the query\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
           },
           "401": {
             "$ref": "#/components/responses/401Unauthorized"
@@ -8500,6 +8566,26 @@
           }
         },
         {
+          "name": "project",
+          "in": "query",
+          "required": false,
+          "description": "The ID of a project to query. The query covers the resources in the project that you can view, so `resource` is optional when this is provided. If `resource` is also provided, the query covers only those resources, and each must belong to the project. Only one project can be provided. A project that doesn't exist or that you can't access returns a 404.",
+          "schema": {
+            "type": "string",
+            "example": "prj-xxxxx"
+          }
+        },
+        {
+          "name": "environment",
+          "in": "query",
+          "required": false,
+          "description": "The ID of an environment to query. The query covers the resources in the environment that you can view, so `resource` is optional when this is provided. If `resource` is also provided, the query covers only those resources, and each must belong to the environment. Only one environment can be provided. If `project` is also provided, the environment must belong to that project. An environment that doesn't exist or that you can't access returns a 404.",
+          "schema": {
+            "type": "string",
+            "example": "evm-xxxxx"
+          }
+        },
+        {
           "name": "instance",
           "in": "query",
           "required": false,
@@ -8521,6 +8607,16 @@
               "MAX",
               "MIN"
             ]
+          }
+        },
+        {
+          "name": "region",
+          "in": "query",
+          "required": false,
+          "description": "The region to query when querying by `project` or `environment`. Required when the project's or environment's resources are in more than one region",
+          "schema": {
+            "type": "string",
+            "example": "oregon"
           }
         }
       ],
@@ -8581,8 +8677,7 @@
                           "type": "object",
                           "required": [
                             "timestamp",
-                            "value",
-                            "unit"
+                            "value"
                           ],
                           "properties": {
                             "timestamp": {
@@ -8608,7 +8703,10 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8635,6 +8733,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8649,7 +8756,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8676,6 +8786,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8690,7 +8809,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8717,6 +8839,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8731,7 +8862,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8758,6 +8892,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8772,7 +8915,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8799,6 +8945,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8813,7 +8968,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8839,10 +8997,16 @@
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
         },
         {
-          "$ref": "#/paths/~1metrics~1http-latency/parameters/5"
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
         },
         {
-          "$ref": "#/paths/~1metrics~1http-latency/parameters/6"
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1http-latency/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1http-latency/parameters/8"
         },
         {
           "name": "aggregateBy",
@@ -8856,6 +9020,9 @@
               "host"
             ]
           }
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8870,7 +9037,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8894,6 +9064,12 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
         },
         {
           "name": "host",
@@ -8925,6 +9101,9 @@
             "format": "float",
             "example": 0.99
           }
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8939,7 +9118,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -8966,6 +9148,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -8980,7 +9171,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9001,6 +9195,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9120,7 +9323,7 @@
             }
           },
           "400": {
-            "description": "Bad request, such as a time range that predates traffic source\ndata availability. The error body's optional `code` field\nidentifies specific failures that clients can handle\nmachine-readably.\n\nError codes:\n- `too_many_resources`: the query requests more resources than\n  the breakdown supports (maximum 30)\n",
+            "description": "Bad request, such as a time range that predates traffic source\ndata availability. The error body's optional `code` field\nidentifies specific failures that clients can handle\nmachine-readably.\n\nError codes:\n- `too_many_resources`: the query requests more resources than\n  the breakdown supports (maximum 30), whether they are named\n  with `resource` or come from a `project` or `environment`\n  filter\n- `multiple_regions`: the queried resources span more than one\n  region\n",
             "content": {
               "application/json": {
                 "schema": {
@@ -9131,6 +9334,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9154,6 +9360,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9168,7 +9383,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9192,6 +9410,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9206,7 +9433,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9230,6 +9460,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9244,7 +9483,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9271,6 +9513,15 @@
             "type": "string",
             "example": "dpg-xxxxx,red-xxxxx"
           }
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9285,7 +9536,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9312,6 +9566,15 @@
             "type": "string",
             "example": "dpg-xxxxx"
           }
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9326,7 +9589,10 @@
             "$ref": "#/paths/~1metrics~1cpu/get/responses/200"
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9350,6 +9616,15 @@
         },
         {
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9393,7 +9668,10 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9419,7 +9697,13 @@
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
         },
         {
-          "$ref": "#/paths/~1metrics~1http-latency/parameters/5"
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1http-latency/parameters/7"
         },
         {
           "name": "statusCode",
@@ -9430,6 +9714,9 @@
             "type": "string",
             "example": "200"
           }
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9474,7 +9761,10 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -9500,13 +9790,22 @@
           "$ref": "#/paths/~1metrics~1cpu/parameters/4"
         },
         {
-          "$ref": "#/paths/~1metrics~1http-latency/parameters/5"
+          "$ref": "#/paths/~1metrics~1cpu/parameters/5"
         },
         {
-          "$ref": "#/paths/~1metrics~1filters~1http/parameters/6"
+          "$ref": "#/paths/~1metrics~1cpu/parameters/6"
         },
         {
-          "$ref": "#/paths/~1metrics~1http-latency/parameters/6"
+          "$ref": "#/paths/~1metrics~1http-latency/parameters/7"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1filters~1http/parameters/8"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1http-latency/parameters/8"
+        },
+        {
+          "$ref": "#/paths/~1metrics~1cpu/parameters/9"
         }
       ],
       "get": {
@@ -9536,7 +9835,10 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/400BadRequest"
+            "$ref": "#/components/responses/400MetricsBadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
           },
           "500": {
             "$ref": "#/components/responses/500InternalServerError"
@@ -15852,9 +16154,7 @@
                     "id",
                     "workflowId",
                     "name",
-                    "image",
                     "createdAt",
-                    "updatedAt",
                     "status"
                   ],
                   "properties": {
@@ -17786,112 +18086,120 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "description": "An isolated compute environment for running code, executing commands, and transferring files.",
-                  "type": "object",
-                  "required": [
-                    "id",
-                    "status",
-                    "plan",
-                    "networkPolicy",
-                    "region",
-                    "timeoutSeconds",
-                    "idleTimeoutSeconds",
-                    "createdAt"
-                  ],
-                  "properties": {
-                    "id": {
-                      "$ref": "#/paths/~1sandboxes~1{sandboxId}/parameters/0/schema"
-                    },
-                    "name": {
-                      "type": "string",
-                      "nullable": true,
-                      "description": "The label set when the sandbox was created."
-                    },
-                    "sandboxGroupId": {
-                      "allOf": [
-                        {
-                          "$ref": "#/paths/~1sandboxes/get/parameters/1/schema"
-                        }
-                      ],
-                      "description": "The ID of the sandbox group this sandbox belongs to."
-                    },
-                    "status": {
-                      "$ref": "#/paths/~1sandboxes/get/parameters/5/schema/items"
-                    },
-                    "plan": {
-                      "anyOf": [
-                        {
-                          "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/plan/anyOf/0"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ],
-                      "x-go-type": "SandboxPlan",
-                      "description": "The sandbox's compute plan. See `sandboxPlan` for known values."
-                    },
-                    "networkPolicy": {
-                      "description": "The policy that controls outbound traffic from the sandbox.",
+                  "allOf": [
+                    {
+                      "description": "An isolated compute environment for running code, executing commands, and transferring files.",
                       "type": "object",
                       "required": [
-                        "type"
+                        "id",
+                        "status",
+                        "plan",
+                        "networkPolicy",
+                        "region",
+                        "timeoutSeconds",
+                        "idleTimeoutSeconds",
+                        "createdAt"
                       ],
                       "properties": {
-                        "type": {
+                        "id": {
+                          "$ref": "#/paths/~1sandboxes~1{sandboxId}/parameters/0/schema"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "The label set when the sandbox was created."
+                        },
+                        "sandboxGroupId": {
                           "allOf": [
                             {
-                              "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/networkPolicy/properties/type/allOf/0"
+                              "$ref": "#/paths/~1sandboxes/get/parameters/1/schema"
                             }
                           ],
-                          "description": "How Render handles outbound traffic from the sandbox. The `allow-list` policy requires `rules`."
+                          "description": "The ID of the sandbox group this sandbox belongs to."
                         },
-                        "default": {
-                          "allOf": [
+                        "status": {
+                          "$ref": "#/paths/~1sandboxes/get/parameters/5/schema/items"
+                        },
+                        "plan": {
+                          "anyOf": [
                             {
-                              "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/networkPolicy/properties/type/allOf/0"
+                              "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/plan/anyOf/0"
+                            },
+                            {
+                              "type": "string"
                             }
                           ],
-                          "deprecated": true,
-                          "description": "A deprecated alias for `type`, returned with the same value. Read `type` instead."
+                          "x-go-type": "SandboxPlan",
+                          "description": "The sandbox's compute plan. See `sandboxPlan` for known values."
                         },
-                        "rules": {
-                          "type": "array",
-                          "items": {
-                            "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/networkPolicy/properties/rules/items"
-                          },
-                          "maxItems": 100,
-                          "description": "Destinations the sandbox may reach, present when `type` is `allow-list` and absent otherwise. Each domain may be listed once.\n"
+                        "networkPolicy": {
+                          "description": "The policy that controls outbound traffic from the sandbox.",
+                          "type": "object",
+                          "required": [
+                            "type"
+                          ],
+                          "properties": {
+                            "type": {
+                              "allOf": [
+                                {
+                                  "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/networkPolicy/properties/type/allOf/0"
+                                }
+                              ],
+                              "description": "How Render handles outbound traffic from the sandbox. The `allow-list` policy requires `rules`."
+                            },
+                            "default": {
+                              "allOf": [
+                                {
+                                  "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/networkPolicy/properties/type/allOf/0"
+                                }
+                              ],
+                              "deprecated": true,
+                              "description": "A deprecated alias for `type`, returned with the same value. Read `type` instead."
+                            },
+                            "rules": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/paths/~1sandboxes/post/requestBody/content/application~1json/schema/properties/networkPolicy/properties/rules/items"
+                              },
+                              "maxItems": 100,
+                              "description": "Destinations the sandbox may reach, present when `type` is `allow-list` and absent otherwise. Each domain may be listed once.\n"
+                            }
+                          }
+                        },
+                        "region": {
+                          "type": "string",
+                          "description": "The Render region where the sandbox runs.",
+                          "example": "oregon"
+                        },
+                        "timeoutSeconds": {
+                          "type": "integer",
+                          "description": "The maximum time the sandbox can run continuously, in seconds. The sandbox terminates when this time elapses. If the sandbox is suspended and later resumed, this timeout restarts. A value of 0 disables the runtime timeout.\n",
+                          "example": 86400
+                        },
+                        "idleTimeoutSeconds": {
+                          "type": "integer",
+                          "description": "The number of seconds of inactivity before Render suspends the sandbox. A value of 0 disables automatic idle suspension.",
+                          "example": 900
+                        },
+                        "createdAt": {
+                          "description": "The timestamp when the sandbox was created, in ISO 8601 format.",
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-04-01T18:30:00Z"
+                        },
+                        "terminatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "The timestamp when the sandbox was terminated, in ISO 8601 format. Null if the sandbox has not been terminated."
                         }
                       }
                     },
-                    "region": {
-                      "type": "string",
-                      "description": "The Render region where the sandbox runs.",
-                      "example": "oregon"
-                    },
-                    "timeoutSeconds": {
-                      "type": "integer",
-                      "description": "The maximum time the sandbox can run continuously, in seconds. The sandbox terminates when this time elapses. If the sandbox is suspended and later resumed, this timeout restarts. A value of 0 disables the runtime timeout.\n",
-                      "example": 86400
-                    },
-                    "idleTimeoutSeconds": {
-                      "type": "integer",
-                      "description": "The number of seconds of inactivity before Render suspends the sandbox. A value of 0 disables automatic idle suspension.",
-                      "example": 900
-                    },
-                    "createdAt": {
-                      "description": "The timestamp when the sandbox was created, in ISO 8601 format.",
-                      "type": "string",
-                      "format": "date-time",
-                      "example": "2026-04-01T18:30:00Z"
-                    },
-                    "terminatedAt": {
-                      "type": "string",
-                      "format": "date-time",
-                      "nullable": true,
-                      "description": "The timestamp when the sandbox was terminated, in ISO 8601 format. Null if the sandbox has not been terminated."
+                    {
+                      "type": "object",
+                      "properties": {}
                     }
-                  }
+                  ]
                 },
                 "example": {
                   "id": "sbx-1cd4gcph1rs3idesc73a2b2mg",
@@ -22722,7 +23030,6 @@
           "override": {
             "type": "object",
             "required": [
-              "type",
               "serviceId",
               "previewNotificationsEnabled",
               "notificationsToSend"
@@ -24909,7 +25216,6 @@
           "highAvailabilityEnabled",
           "name",
           "owner",
-          "project",
           "plan",
           "region",
           "readReplicas",
@@ -25113,7 +25419,7 @@
         ],
         "properties": {
           "sandbox": {
-            "$ref": "#/paths/~1sandboxes/post/responses/201/content/application~1json/schema"
+            "$ref": "#/paths/~1sandboxes/post/responses/201/content/application~1json/schema/allOf/0"
           },
           "cursor": {
             "$ref": "#/components/schemas/cursor"
@@ -25494,6 +25800,16 @@
     "responses": {
       "400BadRequest": {
         "description": "The request could not be understood by the server.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
+      },
+      "400MetricsBadRequest": {
+        "description": "The request could not be understood by the server. The error body's\noptional `code` field identifies specific failures that clients can\nhandle machine-readably.\n\nError codes:\n- `too_many_resources`: the project or environment named by the\n  `project` or `environment` filter contains more resources than a\n  single query supports (maximum 50)\n- `multiple_regions`: the queried resources span more than one region\n",
         "content": {
           "application/json": {
             "schema": {
