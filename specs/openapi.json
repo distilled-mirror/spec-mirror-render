@@ -14333,7 +14333,7 @@
                     ],
                     "properties": {
                       "build": {
-                        "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds/post/responses/201/content/application~1json/schema"
+                        "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds~1{buildId}/get/responses/200/content/application~1json/schema"
                       },
                       "cursor": {
                         "type": "string"
@@ -14372,7 +14372,7 @@
       },
       "post": {
         "summary": "Trigger a build",
-        "description": "Start a new build of the build source at the current HEAD of its\nbranch, even if an up-to-date build already exists. Services linked to\nthe build source with autodeploy enabled are deployed with the result.\n\nUpdating a build source or its build-time environment (env vars,\nsecret files, env groups) with the REST API does not build it. Call\nthis endpoint after those changes to build them.\n\nOnly `git` build sources can be built.\n",
+        "description": "Start a new build of the build source at the current HEAD of its\nbranch, even if an up-to-date build already exists.\n\nBy default, all services linked to the build source with autodeploy enabled\nwill be deployed. Use `deploy.serviceScope` to override this and choose specific\nlinked services.\n\nUpdating a build source or its build-time environment (env vars,\nsecret files, env groups) with the REST API does not build it. Call\nthis endpoint after those changes to build them.\n\nOnly `git` build sources can be built.\n",
         "operationId": "trigger-build-source-build",
         "tags": [
           "Build Sources"
@@ -14392,6 +14392,30 @@
                     ],
                     "default": "do_not_clear",
                     "description": "If `clear`, Render clears the build source's build cache before building. This can be useful if you're experiencing issues with your build."
+                  },
+                  "deploy": {
+                    "type": "object",
+                    "required": [
+                      "serviceScope"
+                    ],
+                    "properties": {
+                      "serviceScope": {
+                        "type": "string",
+                        "enum": [
+                          "autodeploy_only",
+                          "none",
+                          "custom"
+                        ],
+                        "description": "Which linked services the build deploys to:\n\n- `autodeploy_only`: every linked service with autodeploy on, including services set to deploy after CI checks pass. Services with autodeploy off do not get a deploy.\n- `none`: no services. The build runs and deploys nothing.\n- `custom`: the linked services in `serviceIds`, regardless of their autodeploy setting.\n"
+                      },
+                      "serviceIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "IDs of the linked services to deploy to. Required when `serviceScope` is `custom`, and not allowed with the other scopes. You must be authorized to trigger a deploy for each service that you include in this list.\n"
+                      }
+                    }
                   }
                 }
               }
@@ -14401,6 +14425,118 @@
         "responses": {
           "201": {
             "description": "Build started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds~1{buildId}/get/responses/200/content/application~1json/schema"
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "deploys",
+                        "skippedServices"
+                      ],
+                      "properties": {
+                        "deploys": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "serviceId",
+                              "deployId"
+                            ],
+                            "properties": {
+                              "serviceId": {
+                                "type": "string"
+                              },
+                              "deployId": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "description": "The deploys that the build started, one for each service."
+                        },
+                        "skippedServices": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "serviceId",
+                              "reason"
+                            ],
+                            "properties": {
+                              "serviceId": {
+                                "type": "string"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "enum": [
+                                  "suspended",
+                                  "deploys_shut_off"
+                                ],
+                                "description": "Why the service did not get a deploy:\n\n- `suspended`: the service is suspended.\n- `deploys_shut_off`: Render has temporarily paused deploys for the service's plan tier.\n"
+                              }
+                            }
+                          },
+                          "description": "Services in `deploy.serviceScope` that did not get a deploy, with the reason for each. The build still runs for the other services. For `autodeploy_only`, suspended services are not listed.\n"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/401Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/403Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/404NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/429RateLimit"
+          },
+          "500": {
+            "$ref": "#/components/responses/500InternalServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/503ServiceUnavailable"
+          }
+        }
+      }
+    },
+    "/build-sources/{buildSourceId}/builds/{buildId}": {
+      "parameters": [
+        {
+          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
+        },
+        {
+          "name": "buildId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Retrieve a build",
+        "description": "Retrieve a build of a build source, including its status.\n",
+        "operationId": "retrieve-build-source-build",
+        "tags": [
+          "Build Sources"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
@@ -14501,62 +14637,6 @@
                       "format": "date-time"
                     }
                   }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/400BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/401Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/403Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/404NotFound"
-          },
-          "429": {
-            "$ref": "#/components/responses/429RateLimit"
-          },
-          "500": {
-            "$ref": "#/components/responses/500InternalServerError"
-          },
-          "503": {
-            "$ref": "#/components/responses/503ServiceUnavailable"
-          }
-        }
-      }
-    },
-    "/build-sources/{buildSourceId}/builds/{buildId}": {
-      "parameters": [
-        {
-          "$ref": "#/paths/~1build-sources~1{buildSourceId}/parameters/0"
-        },
-        {
-          "name": "buildId",
-          "in": "path",
-          "required": true,
-          "schema": {
-            "type": "string"
-          }
-        }
-      ],
-      "get": {
-        "summary": "Retrieve a build",
-        "description": "Retrieve a build of a build source, including its status.\n",
-        "operationId": "retrieve-build-source-build",
-        "tags": [
-          "Build Sources"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/paths/~1build-sources~1{buildSourceId}~1builds/post/responses/201/content/application~1json/schema"
                 }
               }
             }
